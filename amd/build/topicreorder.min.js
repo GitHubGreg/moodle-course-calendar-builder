@@ -118,14 +118,15 @@ define([
             }
             setSaving(list, true);
             var topicids = collectOrder(list);
-            return saveOrder(courseid, blueprintid, topicids)
+            saveOrder(courseid, blueprintid, topicids)
                 .then(function() {
                     refreshSortOrderBadges(list);
+                    setSaving(list, false);
                     return null;
                 })
-                .fail(Notification.exception)
-                .always(function() {
+                .fail(function(ex) {
                     setSaving(list, false);
+                    Notification.exception(ex);
                 });
         });
     }
