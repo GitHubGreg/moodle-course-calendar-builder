@@ -1,0 +1,85 @@
+{
+  "name": "local_coursecalendar_builder",
+  "description": "Walkthrough for the Course calendar builder page (local_coursecalendar).",
+  "pathmatch": "/local/coursecalendar/calendar.php%",
+  "enabled": "1",
+  "sortorder": "0",
+  "endtourlabel": "",
+  "displaystepnumbers": true,
+  "configdata": "{\"placement\":\"bottom\",\"orphan\":\"0\",\"backdrop\":\"1\",\"reflex\":\"0\",\"filtervalues\":{\"accessdate\":{\"filter_accessdate\":\"tool_usertours_accountcreation\",\"filter_accessdate_range\":0,\"filter_accessdate_enabled\":\"0\"},\"category\":[],\"course\":[],\"courseformat\":[],\"role\":[\"-1\"],\"theme\":[],\"cssselector\":[]},\"majorupdatetime\":1745500000}",
+  "version": "2",
+  "steps": [
+    {
+      "title": "The semester builder",
+      "content": "<p>This is where you build the week-by-week grid students will see. You can manage related tools, add optional intro text, arrange topics, and edit individual cells from one page.</p>",
+      "contentformat": "1",
+      "targettype": "2",
+      "targetvalue": "",
+      "sortorder": "0",
+      "configdata": "{\"placement\":\"bottom\",\"orphan\":\"1\",\"backdrop\":\"1\"}"
+    },
+    {
+      "title": "Quick links",
+      "content": "<p>Jump to related tools from here: <em>Manage Content</em> for blueprint topics, <em>Manage Rules</em> for semester dates and holidays, <em>Open Semester Preview</em> for the student view, <em>Copy Iframe Code</em> for embedding, and <em>Coverage Check</em> to compare what is placed vs missing.</p>",
+      "contentformat": "1",
+      "targettype": "0",
+      "targetvalue": "#local-coursecalendar-builder-actions",
+      "sortorder": "1",
+      "configdata": "{\"placement\":\"bottom\"}"
+    },
+    {
+      "title": "Auto-fill helpers",
+      "content": "<p>The green buttons drop blueprint topics into the grid in bulk. <em>Auto-populate</em> places lectures, labs, tests, and homework in the correct columns based on your blueprint order. <em>Fill Problem Sessions</em> labels empty Lab-mode cells.</p><p>The red buttons wipe content so you can start over - they only affect this one calendar.</p>",
+      "contentformat": "1",
+      "targettype": "0",
+      "targetvalue": "#local-coursecalendar-automation-actions",
+      "sortorder": "2",
+      "configdata": "{\"placement\":\"bottom\"}"
+    },
+    {
+      "title": "Save / Undo / Redo",
+      "content": "<p>Edits you make to cells are held in your browser until you click <strong>Save All</strong> (or press Ctrl+S). Undo/Redo step through this session's changes. If you navigate away with unsaved changes, your browser will warn you.</p>",
+      "contentformat": "1",
+      "targettype": "0",
+      "targetvalue": "#local-coursecalendar-toolbar",
+      "sortorder": "3",
+      "configdata": "{\"placement\":\"bottom\"}"
+    },
+    {
+      "title": "Intro texts",
+      "content": "<p>Use these optional Moodle editors for student-facing text shown above the calendar. The left and right areas are useful for reminders, overview text, links, office hours, or other context students should see before the grid.</p>",
+      "contentformat": "1",
+      "targettype": "0",
+      "targetvalue": "#local-coursecalendar-section-introtexts",
+      "sortorder": "4",
+      "configdata": "{\"placement\":\"top\"}"
+    },
+    {
+      "title": "The semester grid",
+      "content": "<p>The top row is the <strong>header</strong>: columns 1-3 are class days, and column 4 is homework. Each row below is one week.</p><p><strong>Drag</strong> any content cell onto another cell to swap them. Click <em>Edit cell</em> to change text content, choose a topic block, set a cell heading, or toggle highlighting and vertical centering.</p>",
+      "contentformat": "1",
+      "targettype": "0",
+      "targetvalue": "#local-coursecalendar-grid",
+      "sortorder": "5",
+      "configdata": "{\"placement\":\"top\"}"
+    },
+    {
+      "title": "Editing topic blocks",
+      "content": "<p>When a cell shows a <strong>Topic block</strong>, the cell content field is hidden because the displayed content comes from the shared blueprint topic.</p><p>The editor now shows a separate <strong>Shared blueprint topic</strong> area with a warning. Saving there updates the original topic and affects every place that topic is used. Cell heading, highlighting, and vertical centering still apply only to this one cell.</p>",
+      "contentformat": "1",
+      "targettype": "0",
+      "targetvalue": "#local-coursecalendar-grid",
+      "sortorder": "6",
+      "configdata": "{\"placement\":\"top\"}"
+    },
+    {
+      "title": "You're ready to build",
+      "content": "<p>Start by adding semester dates from <em>Manage Rules</em>, or use the auto-fill helpers once your blueprint topics are ready. You can re-run this tour from the <strong>Show walkthrough</strong> button at the top any time.</p>",
+      "contentformat": "1",
+      "targettype": "2",
+      "targetvalue": "",
+      "sortorder": "7",
+      "configdata": "{\"placement\":\"bottom\",\"orphan\":\"1\",\"backdrop\":\"1\"}"
+    }
+  ]
+}

@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/coursecalendar/db" VERSION="2026022701" COMMENT="XMLDB schema for local_coursecalendar"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+  <TABLES>
+    <TABLE NAME="local_coursecalendar_blueprints" COMMENT="Teacher-owned blueprint definitions">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="owneruserid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="shortcode" TYPE="char" LENGTH="32" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="isarchived" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="owneruserid_fk" TYPE="foreign" FIELDS="owneruserid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="usermodified_fk" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="owner_name_uq" TYPE="unique" FIELDS="owneruserid, name"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="owneruserid_ix" UNIQUE="false" FIELDS="owneruserid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_coursecalendar_blueprint_topics" COMMENT="Ordered topics for a blueprint">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="blueprintid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="title" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="type" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="LECTURE" SEQUENCE="false"/>
+        <FIELD NAME="contenthtml" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="isactive" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="blueprintid_fk" TYPE="foreign" FIELDS="blueprintid" REFTABLE="local_coursecalendar_blueprints" REFFIELDS="id"/>
+        <KEY NAME="usermodified_fk" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="blueprint_sortorder_uq" TYPE="unique" FIELDS="blueprintid, sortorder"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="blueprintid_ix" UNIQUE="false" FIELDS="blueprintid"/>
+        <INDEX NAME="blueprint_type_ix" UNIQUE="false" FIELDS="blueprintid, type"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_coursecalendar_course_blueprint_link" COMMENT="One blueprint link per course">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="blueprintid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="linkmode" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="MANUAL" SEQUENCE="false"/>
+        <FIELD NAME="linkconfidence" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="linknotes" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="courseid_fk" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+        <KEY NAME="blueprintid_fk" TYPE="foreign" FIELDS="blueprintid" REFTABLE="local_coursecalendar_blueprints" REFFIELDS="id"/>
+        <KEY NAME="usermodified_fk" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="courseid_uq" TYPE="unique" FIELDS="courseid"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="blueprintid_ix" UNIQUE="false" FIELDS="blueprintid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_coursecalendar_semester_calendars" COMMENT="Semester calendars per course">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="blueprintid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="year" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="semester" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="FALL" SEQUENCE="false"/>
+        <FIELD NAME="title" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="isactive" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="courseid_fk" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+        <KEY NAME="blueprintid_fk" TYPE="foreign" FIELDS="blueprintid" REFTABLE="local_coursecalendar_blueprints" REFFIELDS="id"/>
+        <KEY NAME="usermodified_fk" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="course_year_sem_uq" TYPE="unique" FIELDS="courseid, year, semester"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="courseid_ix" UNIQUE="false" FIELDS="courseid"/>
+        <INDEX NAME="blueprintid_ix" UNIQUE="false" FIELDS="blueprintid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_coursecalendar_timeline_exception_rules" COMMENT="Date-based calendar rules">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="calendarid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="ruletype" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="OTHER" SEQUENCE="false"/>
+        <FIELD NAME="ruledate" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="label" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="fromday" TYPE="char" LENGTH="16" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="today" TYPE="char" LENGTH="16" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="isactive" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="calendarid_fk" TYPE="foreign" FIELDS="calendarid" REFTABLE="local_coursecalendar_semester_calendars" REFFIELDS="id"/>
+        <KEY NAME="usermodified_fk" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="calendarid_ix" UNIQUE="false" FIELDS="calendarid"/>
+        <INDEX NAME="calendar_type_ix" UNIQUE="false" FIELDS="calendarid, ruletype"/>
+        <INDEX NAME="calendar_date_ix" UNIQUE="false" FIELDS="calendarid, ruledate"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_coursecalendar_calendar_blocks" COMMENT="Grid blocks for semester calendars">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="calendarid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="rownum" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="colnum" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="blocktype" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="TEXT" SEQUENCE="false"/>
+        <FIELD NAME="topicid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="contenthtml" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="cellheading" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="headerday" TYPE="char" LENGTH="16" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="headermode" TYPE="char" LENGTH="16" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="highlighted" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="verticallycentred" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="generatedbyrule" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="generatedruleid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="calendarid_fk" TYPE="foreign" FIELDS="calendarid" REFTABLE="local_coursecalendar_semester_calendars" REFFIELDS="id"/>
+        <KEY NAME="topicid_fk" TYPE="foreign" FIELDS="topicid" REFTABLE="local_coursecalendar_blueprint_topics" REFFIELDS="id"/>
+        <KEY NAME="generatedruleid_fk" TYPE="foreign" FIELDS="generatedruleid" REFTABLE="local_coursecalendar_timeline_exception_rules" REFFIELDS="id"/>
+        <KEY NAME="usermodified_fk" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="calendar_row_col_uq" TYPE="unique" FIELDS="calendarid, rownum, colnum"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="calendarid_ix" UNIQUE="false" FIELDS="calendarid"/>
+        <INDEX NAME="topicid_ix" UNIQUE="false" FIELDS="topicid"/>
+        <INDEX NAME="generatedruleid_ix" UNIQUE="false" FIELDS="generatedruleid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_coursecalendar_rule_apply_runs" COMMENT="Trace apply-rules executions">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="calendarid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="appliedbyuserid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="runhash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="summaryjson" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="calendarid_fk" TYPE="foreign" FIELDS="calendarid" REFTABLE="local_coursecalendar_semester_calendars" REFFIELDS="id"/>
+        <KEY NAME="appliedbyuserid_fk" TYPE="foreign" FIELDS="appliedbyuserid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="calendarid_ix" UNIQUE="false" FIELDS="calendarid"/>
+        <INDEX NAME="runhash_ix" UNIQUE="false" FIELDS="runhash"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_coursecalendar_course_info" COMMENT="Supplementary student-facing course content">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="introhtml" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="linkshtml" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="courseid_fk" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+        <KEY NAME="usermodified_fk" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="courseid_uq" TYPE="unique" FIELDS="courseid"/>
+      </KEYS>
+    </TABLE>
+  </TABLES>
+</XMLDB>
+

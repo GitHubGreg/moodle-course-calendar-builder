@@ -1,0 +1,63 @@
+# ---------------------------------------------------------------------------
+# Private / local-only docs (kept locally for dev, never committed)
+# ---------------------------------------------------------------------------
+README_PRIVATE.md
+LOCAL_MOODLE_SETUP.md
+AI_PROGRESS_TRACKER.md
+PRODUCT_SPEC.md
+NOTES.md
+SCRATCH.md
+TODO.md
+
+# Internal release / approval paperwork (PDFs, etc.)
+release/
+
+# ---------------------------------------------------------------------------
+# OS / editor cruft
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+.idea/
+.vscode/
+*.code-workspace
+.cursor/
+.cursorrules
+.claude/
+.aider*
+
+# ---------------------------------------------------------------------------
+# PHP / Moodle / Composer / Node
+# ---------------------------------------------------------------------------
+vendor/
+composer.lock
+composer.phar
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# ---------------------------------------------------------------------------
+# Tests / coverage / logs
+# ---------------------------------------------------------------------------
+.phpunit.result.cache
+phpunit.xml
+coverage/
+*.log
+
+# ---------------------------------------------------------------------------
+# Credentials / secrets (defensive)
+# ---------------------------------------------------------------------------
+.env
+.env.*
+*.pem
+*.key
+*.p12
+secrets.*
