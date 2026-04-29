@@ -65,6 +65,12 @@ define([
         return request;
     }
 
+    /**
+     * Toggle the "saving" CSS state on the list element.
+     *
+     * @param {Element} list The sortable list element.
+     * @param {boolean} saving True while an AJAX save is in flight.
+     */
     function setSaving(list, saving) {
         if (saving) {
             list.classList.add('local-coursecalendar-list-saving');
@@ -112,7 +118,7 @@ define([
             }
             setSaving(list, true);
             var topicids = collectOrder(list);
-            saveOrder(courseid, blueprintid, topicids)
+            return saveOrder(courseid, blueprintid, topicids)
                 .then(function() {
                     refreshSortOrderBadges(list);
                     return null;

@@ -32,6 +32,9 @@ define(['core/log'], function(log) {
         var scrollObserver = null;
         var scrollRaf = 0;
 
+        /**
+         * Toggle the reserved-space body class based on the current popover position.
+         */
         function evaluate() {
             scrollRaf = 0;
             var popper = document.querySelector('[data-flexitour="container"]');
@@ -52,6 +55,9 @@ define(['core/log'], function(log) {
             }
         }
 
+        /**
+         * Coalesce rapid mutations into a single evaluate() call per animation frame.
+         */
         function queueEvaluate() {
             if (scrollRaf) {
                 return;
@@ -59,6 +65,11 @@ define(['core/log'], function(log) {
             scrollRaf = window.requestAnimationFrame(evaluate);
         }
 
+        /**
+         * Observe changes on the tour popover so we can re-evaluate positioning.
+         *
+         * @param {Element} popper The flexitour popover node.
+         */
         function startScrollObserver(popper) {
             if (scrollObserver) {
                 return;
@@ -68,6 +79,9 @@ define(['core/log'], function(log) {
             queueEvaluate();
         }
 
+        /**
+         * Tear down the popover observer and remove the reserved-space class.
+         */
         function stopScrollObserver() {
             if (scrollObserver) {
                 scrollObserver.disconnect();

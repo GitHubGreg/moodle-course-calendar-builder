@@ -495,6 +495,12 @@ function local_coursecalendar_get_blocks_map(int $calendarid): array {
  * @param string $blocktype
  * @param string $contenthtml
  * @param int $userid
+ * @param string|null $headerday
+ * @param string|null $headermode
+ * @param int|null $topicid
+ * @param string|null $cellheading
+ * @param int $highlighted
+ * @param int $verticallycentred
  * @return void
  */
 function local_coursecalendar_upsert_block(
@@ -780,6 +786,9 @@ function local_coursecalendar_toggle_rule(int $ruleid, int $userid): bool {
 
 /**
  * Get the Monday of the week containing the given timestamp.
+ *
+ * @param int $timestamp Unix timestamp.
+ * @return int Unix timestamp of that week's Monday (midnight local time).
  */
 function local_coursecalendar_get_week_monday(int $timestamp): int {
     // PHP date('N'): 1 = Monday ... 7 = Sunday.
@@ -790,6 +799,8 @@ function local_coursecalendar_get_week_monday(int $timestamp): int {
 /**
  * Apply rules to a calendar -- the core rules engine.
  *
+ * @param int $calendarid
+ * @param int $userid
  * @return array Summary of the apply run.
  */
 function local_coursecalendar_apply_rules(int $calendarid, int $userid): array {
@@ -1036,6 +1047,13 @@ function local_coursecalendar_apply_rules(int $calendarid, int $userid): array {
 
 /**
  * Append an annotation note to an existing week label block.
+ *
+ * @param int $calendarid
+ * @param int $rownum
+ * @param string $note
+ * @param int $ruleid
+ * @param int $userid
+ * @return void
  */
 function local_coursecalendar_append_week_label_note(
     int $calendarid,
@@ -1068,6 +1086,9 @@ function local_coursecalendar_append_week_label_note(
 
 /**
  * Compute a deterministic hash of active rules for idempotency.
+ *
+ * @param array $rules
+ * @return string SHA-256 hex digest.
  */
 function local_coursecalendar_compute_rules_hash(array $rules): string {
     $data = [];
@@ -1092,6 +1113,9 @@ function local_coursecalendar_compute_rules_hash(array $rules): string {
 /**
  * Auto-populate a calendar grid with topics from the linked blueprint.
  *
+ * @param int $calendarid
+ * @param int $blueprintid
+ * @param int $userid
  * @return array Summary with placed counts.
  */
 function local_coursecalendar_auto_populate(int $calendarid, int $blueprintid, int $userid): array {
@@ -1269,6 +1293,8 @@ function local_coursecalendar_auto_populate(int $calendarid, int $blueprintid, i
 /**
  * Fill empty Lab-mode cells with "Problem Session" TEXT blocks.
  *
+ * @param int $calendarid
+ * @param int $userid
  * @return int Number of cells filled.
  */
 function local_coursecalendar_fill_problem_sessions(int $calendarid, int $userid): int {
@@ -1316,6 +1342,10 @@ function local_coursecalendar_fill_problem_sessions(int $calendarid, int $userid
 
 /**
  * Run coverage check on a calendar. Returns found/missing/empty arrays.
+ *
+ * @param int $calendarid
+ * @param int $blueprintid
+ * @return array
  */
 function local_coursecalendar_coverage_check(int $calendarid, int $blueprintid): array {
     global $DB;
@@ -1395,6 +1425,7 @@ function local_coursecalendar_coverage_check(int $calendarid, int $blueprintid):
 /**
  * Delete all non-header blocks (rownum > 0).
  *
+ * @param int $calendarid
  * @return int Number of deleted blocks.
  */
 function local_coursecalendar_delete_non_header_blocks(int $calendarid): int {
@@ -1415,6 +1446,7 @@ function local_coursecalendar_delete_non_header_blocks(int $calendarid): int {
 /**
  * Delete TOPIC blocks and "Problem Session" TEXT blocks, preserving week labels and other text.
  *
+ * @param int $calendarid
  * @return int Number of deleted blocks.
  */
 function local_coursecalendar_delete_non_header_non_text_blocks(int $calendarid): int {
@@ -1446,6 +1478,9 @@ function local_coursecalendar_delete_non_header_non_text_blocks(int $calendarid)
 
 /**
  * Get or create course_info record.
+ *
+ * @param int $courseid
+ * @return stdClass|null
  */
 function local_coursecalendar_get_course_info(int $courseid): ?stdClass {
     global $DB;
@@ -1486,7 +1521,10 @@ function local_coursecalendar_save_course_info(int $courseid, string $introhtml,
 /**
  * Map a date to a grid cell position using the week-label structure and header days.
  *
- * @return array|null ['row' => int, 'col' => int] or null if not found
+ * @param array $blocksmap Block grid keyed [row][col] of block records.
+ * @param int $maxrow Highest row number present in the grid.
+ * @param int $timestamp Unix timestamp of the date to locate.
+ * @return array|null ['row' => int, 'col' => int] or null if not found.
  */
 function local_coursecalendar_date_to_cell(array $blocksmap, int $maxrow, int $timestamp): ?array {
     $daymap = ['monday' => 0, 'tuesday' => 1, 'wednesday' => 2, 'thursday' => 3, 'friday' => 4, 'saturday' => 5, 'sunday' => 6];
@@ -1884,6 +1922,8 @@ function local_coursecalendar_gemini_call(string $apikey, array $parts): ?string
 /**
  * Call Google Gemini API to extract academic calendar dates from text.
  *
+ * @param string $apikey
+ * @param string $inputtext
  * @return string|null JSON string of extracted events, or null on failure.
  */
 function local_coursecalendar_gemini_extract_dates(string $apikey, string $inputtext): ?string {
@@ -1924,6 +1964,8 @@ function local_coursecalendar_gemini_extract_dates_from_pdf(string $apikey, stri
 /**
  * Delete all topics for a blueprint (with optional force flag to bypass calendar reference check).
  *
+ * @param int $blueprintid
+ * @param bool $force
  * @return int Number of deleted topics.
  */
 function local_coursecalendar_delete_all_topics(int $blueprintid, bool $force = false): int {
