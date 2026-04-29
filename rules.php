@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Timeline exception rules management page.
+ *
+ * @package    local_coursecalendar
+ * @copyright  2026 Greg Mulcair
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/locallib.php');
 
@@ -45,7 +53,12 @@ if ($action !== '' && data_submitted()) {
             $datestr = required_param('ruledate', PARAM_TEXT);
             $ruledate = strtotime($datestr);
             if (!$ruledate) {
-                redirect($pageurl, get_string('errorinvaliddate', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+                redirect(
+                    $pageurl,
+                    get_string('errorinvaliddate', 'local_coursecalendar'),
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
             $label = trim(optional_param('label', '', PARAM_TEXT));
             $description = trim(optional_param('description', '', PARAM_RAW));
@@ -59,13 +72,24 @@ if ($action !== '' && data_submitted()) {
                     'isactive' => 1,
                 ], 'id', IGNORE_MISSING);
                 if ($existing) {
-                    redirect($pageurl, get_string('errorrulestartendexists', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+                    redirect(
+                        $pageurl,
+                        get_string('errorrulestartendexists', 'local_coursecalendar'),
+                        null,
+                        \core\output\notification::NOTIFY_ERROR
+                    );
                 }
             }
 
             local_coursecalendar_create_rule(
-                (int)$calendar->id, $ruletype, $ruledate,
-                $label, $description, $fromday, $today, (int)$USER->id
+                (int)$calendar->id,
+                $ruletype,
+                $ruledate,
+                $label,
+                $description,
+                $fromday,
+                $today,
+                (int)$USER->id
             );
             redirect($pageurl, get_string('rulecreated', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
             break;
@@ -75,7 +99,12 @@ if ($action !== '' && data_submitted()) {
             $datestr = required_param('ruledate', PARAM_TEXT);
             $ruledate = strtotime($datestr);
             if (!$ruledate) {
-                redirect($pageurl, get_string('errorinvaliddate', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+                redirect(
+                    $pageurl,
+                    get_string('errorinvaliddate', 'local_coursecalendar'),
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
             $label = trim(optional_param('label', '', PARAM_TEXT));
             $description = trim(optional_param('description', '', PARAM_RAW));
@@ -95,7 +124,9 @@ if ($action !== '' && data_submitted()) {
         case 'togglerule':
             $ruleid = required_param('ruleid', PARAM_INT);
             $nowactive = local_coursecalendar_toggle_rule($ruleid, (int)$USER->id);
-            $msg = $nowactive ? get_string('ruleactivated', 'local_coursecalendar') : get_string('ruledeactivated', 'local_coursecalendar');
+            $msg = $nowactive
+                ? get_string('ruleactivated', 'local_coursecalendar')
+                : get_string('ruledeactivated', 'local_coursecalendar');
             redirect($pageurl, $msg, null, \core\output\notification::NOTIFY_SUCCESS);
             break;
 
@@ -137,17 +168,24 @@ echo html_writer::div(get_string('intro_rules', 'local_coursecalendar'), 'local-
 $calendarlabel = s($calendar->semester) . ' ' . (int)$calendar->year;
 echo html_writer::div(get_string('buildercontextlabel', 'local_coursecalendar', $calendarlabel), 'local-coursecalendar-shell mb-3');
 
-echo html_writer::tag('h4',
+echo html_writer::tag(
+    'h4',
     get_string('section_rulesapply', 'local_coursecalendar')
     . ' ' . $OUTPUT->help_icon('section_rulesapply', 'local_coursecalendar'),
     ['class' => 'local-coursecalendar-section-title']
 );
-echo html_writer::start_tag('form', ['method' => 'post', 'class' => 'local-coursecalendar-inline-form mb-3', 'id' => 'local-coursecalendar-applyrules-form']);
+echo html_writer::start_tag(
+    'form',
+    ['method' => 'post', 'class' => 'local-coursecalendar-inline-form mb-3', 'id' => 'local-coursecalendar-applyrules-form']
+);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $courseid]);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'calendarid', 'value' => $calendarid]);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'applyrules']);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('applyrulesbtn', 'local_coursecalendar')]);
+echo html_writer::empty_tag(
+    'input',
+    ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('applyrulesbtn', 'local_coursecalendar')]
+);
 echo html_writer::end_tag('form');
 
 $aiimporturl = new moodle_url('/local/coursecalendar/ai_import.php', ['id' => $courseid, 'calendarid' => $calendarid]);
@@ -156,7 +194,8 @@ echo html_writer::link($aiimporturl, get_string('aiimportlink', 'local_coursecal
     'id' => 'local-coursecalendar-aiimport-link',
 ]);
 
-echo html_writer::tag('h4',
+echo html_writer::tag(
+    'h4',
     get_string('section_rulesexisting', 'local_coursecalendar')
     . ' ' . $OUTPUT->help_icon('section_rulesexisting', 'local_coursecalendar'),
     ['class' => 'local-coursecalendar-section-title', 'id' => 'local-coursecalendar-existingrules']
@@ -235,7 +274,10 @@ foreach ($weekdays as $wd) {
 }
 echo html_writer::end_tag('select');
 
-echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-primary mt-2', 'value' => get_string('createrulesubmit', 'local_coursecalendar')]);
+echo html_writer::empty_tag(
+    'input',
+    ['type' => 'submit', 'class' => 'btn btn-primary mt-2', 'value' => get_string('createrulesubmit', 'local_coursecalendar')]
+);
 echo html_writer::end_tag('form');
 echo html_writer::end_tag('details');
 $createrulehtml = ob_get_clean();
@@ -333,7 +375,11 @@ if (empty($rules)) {
         echo html_writer::end_div();
 
         if ($rule->ruletype === 'DAY_SWAP') {
-            echo html_writer::tag('div', get_string('dayswapfieldshelp', 'local_coursecalendar'), ['class' => 'text-muted small mb-2']);
+            echo html_writer::tag(
+                'div',
+                get_string('dayswapfieldshelp', 'local_coursecalendar'),
+                ['class' => 'text-muted small mb-2']
+            );
 
             echo html_writer::start_div('mb-2');
             echo html_writer::tag('label', get_string('fromdaylabel', 'local_coursecalendar'), ['class' => 'font-weight-bold']);

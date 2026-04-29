@@ -6,7 +6,7 @@
  *
  * @module local_coursecalendar/builder
  */
-define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notification, Str) {
+define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
     'use strict';
 
     var state = {
@@ -39,6 +39,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         return grid.innerHTML;
     }
 
+    /**
+     * Push the current grid state onto the undo stack.
+     */
     function pushUndo() {
         var snap = captureSnapshot();
         if (snap !== null) {
@@ -51,6 +54,11 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         markDirty();
     }
 
+    /**
+     * Restore the grid DOM from a captured snapshot.
+     *
+     * @param {string} html Previously captured innerHTML snapshot.
+     */
     function restoreSnapshot(html) {
         var grid = document.querySelector(SELECTORS.grid);
         if (!grid || !html) {
@@ -61,6 +69,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         markDirty();
     }
 
+    /**
+     * Undo the most recent change by popping the undo stack.
+     */
     function undo() {
         if (state.undoStack.length === 0) {
             return;
@@ -71,6 +82,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         restoreSnapshot(prev);
     }
 
+    /**
+     * Redo the most recent undone change by popping the redo stack.
+     */
     function redo() {
         if (state.redoStack.length === 0) {
             return;
@@ -81,11 +95,17 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         restoreSnapshot(next);
     }
 
+    /**
+     * Mark the grid as having unsaved changes and refresh the UI.
+     */
     function markDirty() {
         state.dirty = true;
         updateUI();
     }
 
+    /**
+     * Mark the grid as clean (saved) and reset the undo/redo stacks.
+     */
     function markClean() {
         state.dirty = false;
         state.undoStack = [];
@@ -93,6 +113,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         updateUI();
     }
 
+    /**
+     * Refresh the dirty badge and undo/redo button enabled states.
+     */
     function updateUI() {
         var badge = document.querySelector(SELECTORS.badge);
         if (badge) {
@@ -141,6 +164,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         return blocks;
     }
 
+    /**
+     * Persist all current cell data to the backend via the builder AJAX call.
+     */
     function saveAll() {
         var blocks = collectBlocks();
         if (blocks.length === 0) {
@@ -181,8 +207,14 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         }]);
     }
 
-    // --- Drag and drop ---
+    // Drag and drop.
 
+    /**
+     * Walk up from the given element until an editable grid cell is found.
+     *
+     * @param {Element} el Starting element.
+     * @returns {Element|null} Editable cell element, or null if none found.
+     */
     function getEditableCell(el) {
         while (el && el !== document) {
             if (el.hasAttribute && el.hasAttribute('data-cc-row') &&
@@ -194,6 +226,11 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         return null;
     }
 
+    /**
+     * Drag start handler: remember the source cell and set the drag payload.
+     *
+     * @param {DragEvent} e Native drag event.
+     */
     function handleDragStart(e) {
         var cell = getEditableCell(e.target);
         if (!cell) {
@@ -206,6 +243,11 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             cell.getAttribute('data-cc-row') + ',' + cell.getAttribute('data-cc-col'));
     }
 
+    /**
+     * Drag over handler: allow dropping and paint the hover state.
+     *
+     * @param {DragEvent} e Native drag event.
+     */
     function handleDragOver(e) {
         var cell = getEditableCell(e.target);
         if (!cell) {
@@ -216,6 +258,11 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         cell.classList.add('local-coursecalendar-dragover');
     }
 
+    /**
+     * Drag leave handler: clear the hover state.
+     *
+     * @param {DragEvent} e Native drag event.
+     */
     function handleDragLeave(e) {
         var cell = getEditableCell(e.target);
         if (cell) {
@@ -223,6 +270,11 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         }
     }
 
+    /**
+     * Drop handler: swap the source and target cells via the backend.
+     *
+     * @param {DragEvent} e Native drag event.
+     */
     function handleDrop(e) {
         e.preventDefault();
         var targetCell = getEditableCell(e.target);
@@ -267,6 +319,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         state.dragSource = null;
     }
 
+    /**
+     * Drag end handler: remove any leftover drag styling.
+     */
     function handleDragEnd() {
         if (state.dragSource) {
             state.dragSource.classList.remove('local-coursecalendar-dragging');
@@ -277,6 +332,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         state.dragSource = null;
     }
 
+    /**
+     * Attach drag and drop listeners to every editable cell in the grid.
+     */
     function bindDragEvents() {
         var grid = document.querySelector(SELECTORS.grid);
         if (!grid) {
@@ -298,6 +356,32 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         });
     }
 
+    /**
+     * Show the iframe embed code in a textarea the user can copy from manually.
+     *
+     * @param {string} iframe The iframe HTML to show.
+     */
+    function showIframeFallback(iframe) {
+        Notification.addNotification({
+            message: 'Clipboard unavailable. Copy the iframe code from the textarea above.',
+            type: 'warning',
+        });
+        var ta = document.createElement('textarea');
+        ta.value = iframe;
+        ta.readOnly = true;
+        ta.style.width = '100%';
+        ta.style.minHeight = '80px';
+        ta.style.marginTop = '8px';
+        var btn = document.querySelector(SELECTORS.copyIframeBtn);
+        if (btn && btn.parentNode) {
+            btn.parentNode.insertBefore(ta, btn.nextSibling);
+            ta.select();
+        }
+    }
+
+    /**
+     * Copy the embeddable iframe HTML for this calendar to the clipboard.
+     */
     function copyIframeCode() {
         var btn = document.querySelector(SELECTORS.copyIframeBtn);
         if (!btn) {
@@ -311,12 +395,16 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             'style="border:1px solid #ccc;" loading="lazy"></iframe>';
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(iframe).then(function() {
-                Notification.addNotification({message: 'Iframe code copied to clipboard.', type: 'success'});
+                Notification.addNotification({
+                    message: 'Iframe code copied to clipboard.',
+                    type: 'success',
+                });
+                return true;
             }).catch(function() {
-                window.prompt('Copy this iframe code:', iframe);
+                showIframeFallback(iframe);
             });
         } else {
-            window.prompt('Copy this iframe code:', iframe);
+            showIframeFallback(iframe);
         }
     }
 

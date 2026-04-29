@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Student-facing page.
+ *
+ * @package    local_coursecalendar
+ * @copyright  2026 Greg Mulcair
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/locallib.php');
 
@@ -52,4 +60,3 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('studentpageheading', 'local_coursecalendar'));
 echo $OUTPUT->notification(get_string('studentnoactivecalendar', 'local_coursecalendar'), 'notifyinfo');
 echo $OUTPUT->footer();
-

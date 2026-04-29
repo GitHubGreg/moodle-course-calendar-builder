@@ -14,7 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-defined('MOODLE_INTERNAL') || die();
+/**
+ * Core library callbacks.
+ *
+ * @package    local_coursecalendar
+ * @copyright  2026 Greg Mulcair
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 /**
  * Add local_coursecalendar links to course navigation.
@@ -23,7 +29,11 @@ defined('MOODLE_INTERNAL') || die();
  * @param stdClass $course
  * @param context_course $context
  */
-function local_coursecalendar_extend_navigation_course(navigation_node $navigation, stdClass $course, context_course $context): void {
+function local_coursecalendar_extend_navigation_course(
+    navigation_node $navigation,
+    stdClass $course,
+    context_course $context
+): void {
     if (has_capability('local/coursecalendar:managecalendar', $context)) {
         $manageurl = new moodle_url('/local/coursecalendar/manage.php', ['id' => $course->id]);
         $navigation->add(
@@ -46,4 +56,3 @@ function local_coursecalendar_extend_navigation_course(navigation_node $navigati
         );
     }
 }
-

@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * English language strings.
+ *
+ * @package    local_coursecalendar
+ * @copyright  2026 Greg Mulcair
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 $string['pluginname'] = 'Course calendar';
 $string['coursecalendar'] = 'Course calendar';
 $string['managecoursecalendar'] = 'Course calendar: Setup';
@@ -393,4 +401,3 @@ $string['coursecalendar:managecalendar'] = 'Manage course calendar';
 $string['coursecalendar:viewcalendar'] = 'View course calendar';
 $string['coursecalendar:manage'] = 'Manage course calendar (legacy)';
 $string['coursecalendar:view'] = 'View course calendar (legacy)';
-

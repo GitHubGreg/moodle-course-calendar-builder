@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Landing page for the course calendar plugin.
+ *
+ * @package    local_coursecalendar
+ * @copyright  2026 Greg Mulcair
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once(__DIR__ . '/../../config.php');
 
 $courseid = required_param('id', PARAM_INT);
@@ -28,4 +36,3 @@ if (has_capability('local/coursecalendar:managecalendar', $context)) {
 
 require_capability('local/coursecalendar:viewcalendar', $context);
 redirect(new moodle_url('/local/coursecalendar/student.php', ['id' => $courseid]));
-

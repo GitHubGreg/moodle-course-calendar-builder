@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Builder management page.
+ *
+ * @package    local_coursecalendar
+ * @copyright  2026 Greg Mulcair
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/locallib.php');
 
@@ -49,11 +57,21 @@ if ($action !== '' && data_submitted()) {
             $description = trim(optional_param('description', '', PARAM_TEXT));
 
             if ($name === '') {
-                redirect($redirecturl, get_string('errorblueprintnamerequired', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+                redirect(
+                    $redirecturl,
+                    get_string('errorblueprintnamerequired', 'local_coursecalendar'),
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
 
             if ($DB->record_exists('local_coursecalendar_blueprints', ['owneruserid' => $USER->id, 'name' => $name])) {
-                redirect($redirecturl, get_string('errorblueprintduplicate', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+                redirect(
+                    $redirecturl,
+                    get_string('errorblueprintduplicate', 'local_coursecalendar'),
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
 
             $now = time();
@@ -69,7 +87,12 @@ if ($action !== '' && data_submitted()) {
             ];
             $newblueprintid = (int)$DB->insert_record('local_coursecalendar_blueprints', $record);
             $redirecturl->param('blueprintctx', $newblueprintid);
-            redirect($redirecturl, get_string('blueprintcreated', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string('blueprintcreated', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'updateblueprint':
@@ -80,15 +103,27 @@ if ($action !== '' && data_submitted()) {
             $shortcode = core_text::strtoupper(trim(optional_param('shortcode', '', PARAM_ALPHANUMEXT)));
             $description = trim(optional_param('description', '', PARAM_TEXT));
             if ($name === '') {
-                redirect($redirecturl, get_string('errorblueprintnamerequired', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+                redirect(
+                    $redirecturl,
+                    get_string('errorblueprintnamerequired', 'local_coursecalendar'),
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
 
-            if ($DB->record_exists_select(
-                'local_coursecalendar_blueprints',
-                'owneruserid = :owneruserid AND name = :name AND id <> :id',
-                ['owneruserid' => $USER->id, 'name' => $name, 'id' => $blueprint->id]
-            )) {
-                redirect($redirecturl, get_string('errorblueprintduplicate', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+            if (
+                $DB->record_exists_select(
+                    'local_coursecalendar_blueprints',
+                    'owneruserid = :owneruserid AND name = :name AND id <> :id',
+                    ['owneruserid' => $USER->id, 'name' => $name, 'id' => $blueprint->id]
+                )
+            ) {
+                redirect(
+                    $redirecturl,
+                    get_string('errorblueprintduplicate', 'local_coursecalendar'),
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
 
             $blueprint->name = $name;
@@ -98,7 +133,12 @@ if ($action !== '' && data_submitted()) {
             $blueprint->usermodified = $USER->id;
             $DB->update_record('local_coursecalendar_blueprints', $blueprint);
             $redirecturl->param('blueprintctx', (int)$blueprint->id);
-            redirect($redirecturl, get_string('blueprintupdated', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string('blueprintupdated', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'togglearchive':
@@ -110,25 +150,52 @@ if ($action !== '' && data_submitted()) {
             $DB->update_record('local_coursecalendar_blueprints', $blueprint);
             $messagekey = $blueprint->isarchived ? 'blueprintarchived' : 'blueprintunarchived';
             $redirecturl->param('blueprintctx', (int)$blueprint->id);
-            redirect($redirecturl, get_string($messagekey, 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string($messagekey, 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'linkblueprint':
             $blueprintid = required_param('blueprintid', PARAM_INT);
             $blueprint = local_coursecalendar_require_owned_blueprint($blueprintid, (int)$USER->id);
             if ((int)$blueprint->isarchived === 1) {
-                redirect($redirecturl, get_string('errorarchivedblueprintlink', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+                redirect(
+                    $redirecturl,
+                    get_string('errorarchivedblueprintlink', 'local_coursecalendar'),
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
             $linknotes = trim(optional_param('linknotes', '', PARAM_TEXT));
-            local_coursecalendar_upsert_course_blueprint_link($courseid, (int)$blueprint->id, 'MANUAL', null, $linknotes, (int)$USER->id);
+            local_coursecalendar_upsert_course_blueprint_link(
+                $courseid,
+                (int)$blueprint->id,
+                'MANUAL',
+                null,
+                $linknotes,
+                (int)$USER->id
+            );
             $redirecturl->param('blueprintctx', (int)$blueprint->id);
-            redirect($redirecturl, get_string('courselinkupdated', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string('courselinkupdated', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'autolinkcourse':
             $suggestion = local_coursecalendar_get_autolink_suggestion($course, (int)$USER->id);
             if (!$suggestion || !empty($suggestion['ambiguous'])) {
-                redirect($redirecturl, get_string('noautosuggestion', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+                redirect(
+                    $redirecturl,
+                    get_string('noautosuggestion', 'local_coursecalendar'),
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
 
             $best = $suggestion['best'];
@@ -141,12 +208,22 @@ if ($action !== '' && data_submitted()) {
                 (int)$USER->id
             );
             $redirecturl->param('blueprintctx', (int)$best['blueprint']->id);
-            redirect($redirecturl, get_string('courseautolinked', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string('courseautolinked', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'unlinkblueprint':
             $DB->delete_records('local_coursecalendar_course_blueprint_link', ['courseid' => $courseid]);
-            redirect($redirecturl, get_string('courselinkremoved', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string('courselinkremoved', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'createcalendar':
@@ -157,11 +234,22 @@ if ($action !== '' && data_submitted()) {
             $title = trim(optional_param('title', '', PARAM_TEXT));
 
             if ($year < 2000 || $year > 2200) {
-                redirect($redirecturl, get_string('errorinvalidyear', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+                redirect(
+                    $redirecturl,
+                    get_string('errorinvalidyear', 'local_coursecalendar'),
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
 
-            if ($DB->record_exists('local_coursecalendar_semester_calendars', ['courseid' => $courseid, 'year' => $year, 'semester' => $semester])) {
-                redirect($redirecturl, get_string('errorcalendarduplicate', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+            $dupconds = ['courseid' => $courseid, 'year' => $year, 'semester' => $semester];
+            if ($DB->record_exists('local_coursecalendar_semester_calendars', $dupconds)) {
+                redirect(
+                    $redirecturl,
+                    get_string('errorcalendarduplicate', 'local_coursecalendar'),
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
 
             $now = time();
@@ -178,7 +266,12 @@ if ($action !== '' && data_submitted()) {
             ];
             $DB->set_field('local_coursecalendar_semester_calendars', 'isactive', 0, ['courseid' => $courseid]);
             $DB->insert_record('local_coursecalendar_semester_calendars', $record);
-            redirect($redirecturl, get_string('calendarcreated', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string('calendarcreated', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'updatecalendar':
@@ -189,7 +282,12 @@ if ($action !== '' && data_submitted()) {
             $calendar->timemodified = time();
             $calendar->usermodified = (int)$USER->id;
             $DB->update_record('local_coursecalendar_semester_calendars', $calendar);
-            redirect($redirecturl, get_string('calendarupdated', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string('calendarupdated', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'togglecalendaractive':
@@ -205,7 +303,12 @@ if ($action !== '' && data_submitted()) {
             $calendar->usermodified = (int)$USER->id;
             $DB->update_record('local_coursecalendar_semester_calendars', $calendar);
             $messagekey = $activating ? 'calendaractivated' : 'calendardeactivated';
-            redirect($redirecturl, get_string($messagekey, 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string($messagekey, 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'deletecalendar':
@@ -216,7 +319,12 @@ if ($action !== '' && data_submitted()) {
             $DB->delete_records('local_coursecalendar_calendar_blocks', ['calendarid' => $calendar->id]);
             $DB->delete_records('local_coursecalendar_timeline_exception_rules', ['calendarid' => $calendar->id]);
             $DB->delete_records('local_coursecalendar_semester_calendars', ['id' => $calendar->id]);
-            redirect($redirecturl, get_string('calendardeleted', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string('calendardeleted', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'createtopic':
@@ -228,7 +336,12 @@ if ($action !== '' && data_submitted()) {
 
             if ($title === '') {
                 $redirecturl->param('blueprintctx', (int)$blueprint->id);
-                redirect($redirecturl, get_string('errortopictitlerequired', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+                redirect(
+                    $redirecturl,
+                    get_string('errortopictitlerequired', 'local_coursecalendar'),
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
 
             $sortorder = (int)$DB->count_records('local_coursecalendar_blueprint_topics', ['blueprintid' => $blueprint->id]) + 1;
@@ -246,7 +359,12 @@ if ($action !== '' && data_submitted()) {
             ];
             $DB->insert_record('local_coursecalendar_blueprint_topics', $record);
             $redirecturl->param('blueprintctx', (int)$blueprint->id);
-            redirect($redirecturl, get_string('topiccreated', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string('topiccreated', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'updatetopic':
@@ -257,13 +375,23 @@ if ($action !== '' && data_submitted()) {
             $topic->contenthtml = trim(optional_param('contenthtml', '', PARAM_RAW));
             if ($topic->title === '') {
                 $redirecturl->param('blueprintctx', (int)$topic->blueprintid);
-                redirect($redirecturl, get_string('errortopictitlerequired', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+                redirect(
+                    $redirecturl,
+                    get_string('errortopictitlerequired', 'local_coursecalendar'),
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
             $topic->timemodified = time();
             $topic->usermodified = $USER->id;
             $DB->update_record('local_coursecalendar_blueprint_topics', $topic);
             $redirecturl->param('blueprintctx', (int)$topic->blueprintid);
-            redirect($redirecturl, get_string('topicupdated', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string('topicupdated', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'toggletopicactive':
@@ -275,7 +403,12 @@ if ($action !== '' && data_submitted()) {
             $DB->update_record('local_coursecalendar_blueprint_topics', $topic);
             $redirecturl->param('blueprintctx', (int)$topic->blueprintid);
             $messagekey = $topic->isactive ? 'topicactivated' : 'topicdeactivated';
-            redirect($redirecturl, get_string($messagekey, 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string($messagekey, 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'movetopicup':
@@ -285,7 +418,12 @@ if ($action !== '' && data_submitted()) {
             $direction = ($action === 'movetopicup') ? -1 : 1;
             local_coursecalendar_move_topic($topic, $direction);
             $redirecturl->param('blueprintctx', (int)$topic->blueprintid);
-            redirect($redirecturl, get_string('topicreordered', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string('topicreordered', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'deletetopic':
@@ -313,7 +451,12 @@ if ($action !== '' && data_submitted()) {
             $DB->delete_records('local_coursecalendar_blueprint_topics', ['id' => $topic->id]);
             local_coursecalendar_normalise_topic_sortorder((int)$topic->blueprintid);
             $redirecturl->param('blueprintctx', (int)$topic->blueprintid);
-            redirect($redirecturl, get_string('topicdeleted', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $redirecturl,
+                get_string('topicdeleted', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
     }
 }
@@ -327,7 +470,7 @@ $PAGE->set_heading(format_string($course->fullname));
 $PAGE->requires->css(new moodle_url('/local/coursecalendar/styles.css'));
 
 $allblueprints = local_coursecalendar_get_teacher_blueprints((int)$USER->id, true);
-$activeblueprints = array_filter($allblueprints, static function(stdClass $record): bool {
+$activeblueprints = array_filter($allblueprints, static function (stdClass $record): bool {
     return (int)$record->isarchived === 0;
 });
 
@@ -364,7 +507,7 @@ $topics = [];
 if ($selectedblueprint) {
     $topics = array_values(local_coursecalendar_get_blueprint_topics((int)$selectedblueprint->id, true));
     if ($topicfilter !== 'ALL') {
-        $topics = array_values(array_filter($topics, static function(stdClass $topic) use ($topicfilter): bool {
+        $topics = array_values(array_filter($topics, static function (stdClass $topic) use ($topicfilter): bool {
             return $topic->type === $topicfilter;
         }));
     }
@@ -454,7 +597,7 @@ if (!empty($coursecalendars)) {
         $scores[$calendarid] = ['score' => $score, 'reasonkey' => $reasonkey];
     }
 
-    uasort($coursecalendars, static function(stdClass $left, stdClass $right) use ($scores): int {
+    uasort($coursecalendars, static function (stdClass $left, stdClass $right) use ($scores): int {
         $leftscore = $scores[(int)$left->id]['score'] ?? 0;
         $rightscore = $scores[(int)$right->id]['score'] ?? 0;
         if ($leftscore === $rightscore) {
@@ -471,7 +614,7 @@ if (!empty($coursecalendars)) {
 $linkedtopiccount = null;
 if ($linkedblueprint) {
     $linkedtopics = local_coursecalendar_get_blueprint_topics((int)$linkedblueprint->id, true);
-    $linkedtopiccount = count(array_filter($linkedtopics, static function(stdClass $topic): bool {
+    $linkedtopiccount = count(array_filter($linkedtopics, static function (stdClass $topic): bool {
         return (int)$topic->isactive === 1;
     }));
 }
@@ -484,7 +627,7 @@ $topiceditoroptions = [
     'enable_filemanagement' => false,
 ];
 
-$rendercreateblueprintform = static function(bool $open = false) use ($courseid): void {
+$rendercreateblueprintform = static function (bool $open = false) use ($courseid): void {
     $detailsattrs = [
         'class' => 'local-coursecalendar-card local-coursecalendar-create-blueprint',
         'id' => 'local-coursecalendar-createblueprint',
@@ -509,7 +652,11 @@ $rendercreateblueprintform = static function(bool $open = false) use ($courseid)
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
 
     echo html_writer::start_div('mb-2');
-    echo html_writer::tag('label', get_string('blueprintnamelabel', 'local_coursecalendar'), ['for' => 'local-coursecalendar-name-new']);
+    echo html_writer::tag(
+        'label',
+        get_string('blueprintnamelabel', 'local_coursecalendar'),
+        ['for' => 'local-coursecalendar-name-new']
+    );
     echo html_writer::empty_tag('input', [
         'type' => 'text',
         'id' => 'local-coursecalendar-name-new',
@@ -520,7 +667,11 @@ $rendercreateblueprintform = static function(bool $open = false) use ($courseid)
     echo html_writer::end_div();
 
     echo html_writer::start_div('mb-2');
-    echo html_writer::tag('label', get_string('blueprintshortcodelabel', 'local_coursecalendar'), ['for' => 'local-coursecalendar-shortcode-new']);
+    echo html_writer::tag(
+        'label',
+        get_string('blueprintshortcodelabel', 'local_coursecalendar'),
+        ['for' => 'local-coursecalendar-shortcode-new']
+    );
     echo html_writer::empty_tag('input', [
         'type' => 'text',
         'id' => 'local-coursecalendar-shortcode-new',
@@ -531,7 +682,11 @@ $rendercreateblueprintform = static function(bool $open = false) use ($courseid)
     echo html_writer::end_div();
 
     echo html_writer::start_div('mb-2');
-    echo html_writer::tag('label', get_string('blueprintdescriptionlabel', 'local_coursecalendar'), ['for' => 'local-coursecalendar-description-new']);
+    echo html_writer::tag(
+        'label',
+        get_string('blueprintdescriptionlabel', 'local_coursecalendar'),
+        ['for' => 'local-coursecalendar-description-new']
+    );
     echo html_writer::tag('textarea', '', [
         'id' => 'local-coursecalendar-description-new',
         'name' => 'description',
@@ -641,7 +796,11 @@ if ($linkedblueprint) {
     echo html_writer::start_div('local-coursecalendar-blueprint-summary-main');
     echo html_writer::tag('span', format_string($linkedblueprint->name), ['class' => 'local-coursecalendar-blueprint-name']);
     if (!empty($linkedblueprint->shortcode)) {
-        echo html_writer::tag('span', format_string($linkedblueprint->shortcode), ['class' => 'local-coursecalendar-blueprint-shortcode']);
+        echo html_writer::tag(
+            'span',
+            format_string($linkedblueprint->shortcode),
+            ['class' => 'local-coursecalendar-blueprint-shortcode']
+        );
     }
     if ($linkedtopiccount !== null) {
         echo html_writer::tag(
@@ -668,7 +827,11 @@ if ($linkedblueprint) {
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $courseid]);
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'unlinkblueprint']);
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-    echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-outline-secondary btn-sm', 'value' => get_string('unlinksubmit', 'local_coursecalendar')]);
+    echo html_writer::empty_tag('input', [
+        'type' => 'submit',
+        'class' => 'btn btn-outline-secondary btn-sm',
+        'value' => get_string('unlinksubmit', 'local_coursecalendar'),
+    ]);
     echo html_writer::end_tag('form');
     echo html_writer::end_tag('div');
 } else {
@@ -676,7 +839,10 @@ if ($linkedblueprint) {
 }
 
 if (!empty($activeblueprints) && !$linkedblueprint) {
-    echo html_writer::start_tag('form', ['method' => 'post', 'class' => 'local-coursecalendar-card', 'id' => 'local-coursecalendar-manuallink-form']);
+    echo html_writer::start_tag(
+        'form',
+        ['method' => 'post', 'class' => 'local-coursecalendar-card', 'id' => 'local-coursecalendar-manuallink-form']
+    );
     echo html_writer::tag('h4', get_string('manuallinkheading', 'local_coursecalendar')
         . ' ' . $OUTPUT->help_icon('manuallinkheading', 'local_coursecalendar'));
     if ($suggestedblueprintid > 0) {
@@ -689,8 +855,15 @@ if (!empty($activeblueprints) && !$linkedblueprint) {
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
 
     echo html_writer::start_div('mb-2');
-    echo html_writer::tag('label', get_string('blueprintlabel', 'local_coursecalendar'), ['for' => 'local-coursecalendar-blueprintid']);
-    echo html_writer::start_tag('select', ['id' => 'local-coursecalendar-blueprintid', 'name' => 'blueprintid', 'class' => 'custom-select']);
+    echo html_writer::tag(
+        'label',
+        get_string('blueprintlabel', 'local_coursecalendar'),
+        ['for' => 'local-coursecalendar-blueprintid']
+    );
+    echo html_writer::start_tag(
+        'select',
+        ['id' => 'local-coursecalendar-blueprintid', 'name' => 'blueprintid', 'class' => 'custom-select']
+    );
     foreach ($activeblueprints as $blueprint) {
         $attrs = ['value' => $blueprint->id];
         if ($linkedblueprint && (int)$linkedblueprint->id === (int)$blueprint->id) {
@@ -703,7 +876,10 @@ if (!empty($activeblueprints) && !$linkedblueprint) {
     echo html_writer::end_tag('select');
     echo html_writer::end_div();
 
-    echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('manuallinksubmit', 'local_coursecalendar')]);
+    echo html_writer::empty_tag(
+        'input',
+        ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('manuallinksubmit', 'local_coursecalendar')]
+    );
     echo html_writer::end_tag('form');
 }
 
@@ -732,7 +908,11 @@ if (!$linkedblueprint) {
             get_string('createcalendarbutton', 'local_coursecalendar'),
             ['class' => 'local-coursecalendar-disclosure-summary local-coursecalendar-disclosure-summary--primary']
         );
-        echo html_writer::start_tag('form', ['method' => 'post', 'id' => 'local-coursecalendar-createcalendar-form', 'class' => 'local-coursecalendar-disclosure-body']);
+        echo html_writer::start_tag('form', [
+            'method' => 'post',
+            'id' => 'local-coursecalendar-createcalendar-form',
+            'class' => 'local-coursecalendar-disclosure-body',
+        ]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $courseid]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'createcalendar']);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'blueprintid', 'value' => (int)$linkedblueprint->id]);
@@ -741,7 +921,11 @@ if (!$linkedblueprint) {
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
 
         echo html_writer::start_div('mb-2');
-        echo html_writer::tag('label', get_string('calendaryearlabel', 'local_coursecalendar'), ['for' => 'local-coursecalendar-year-new']);
+        echo html_writer::tag(
+            'label',
+            get_string('calendaryearlabel', 'local_coursecalendar'),
+            ['for' => 'local-coursecalendar-year-new']
+        );
         echo html_writer::empty_tag('input', [
             'type' => 'number',
             'id' => 'local-coursecalendar-year-new',
@@ -755,8 +939,15 @@ if (!$linkedblueprint) {
         echo html_writer::end_div();
 
         echo html_writer::start_div('mb-2');
-        echo html_writer::tag('label', get_string('calendarsemesterlabel', 'local_coursecalendar'), ['for' => 'local-coursecalendar-semester-new']);
-        echo html_writer::start_tag('select', ['id' => 'local-coursecalendar-semester-new', 'name' => 'semester', 'class' => 'custom-select']);
+        echo html_writer::tag(
+            'label',
+            get_string('calendarsemesterlabel', 'local_coursecalendar'),
+            ['for' => 'local-coursecalendar-semester-new']
+        );
+        echo html_writer::start_tag(
+            'select',
+            ['id' => 'local-coursecalendar-semester-new', 'name' => 'semester', 'class' => 'custom-select']
+        );
         foreach (local_coursecalendar_get_semesters() as $semesteroption) {
             echo html_writer::tag('option', $semesteroption, ['value' => $semesteroption]);
         }
@@ -764,7 +955,11 @@ if (!$linkedblueprint) {
         echo html_writer::end_div();
 
         echo html_writer::start_div('mb-2');
-        echo html_writer::tag('label', get_string('calendartitlelabel', 'local_coursecalendar'), ['for' => 'local-coursecalendar-title-new']);
+        echo html_writer::tag(
+            'label',
+            get_string('calendartitlelabel', 'local_coursecalendar'),
+            ['for' => 'local-coursecalendar-title-new']
+        );
         echo html_writer::empty_tag('input', [
             'type' => 'text',
             'id' => 'local-coursecalendar-title-new',
@@ -775,7 +970,11 @@ if (!$linkedblueprint) {
         ]);
         echo html_writer::end_div();
 
-        echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('createcalendarsubmit', 'local_coursecalendar')]);
+        echo html_writer::empty_tag('input', [
+            'type' => 'submit',
+            'class' => 'btn btn-primary',
+            'value' => get_string('createcalendarsubmit', 'local_coursecalendar'),
+        ]);
         echo html_writer::end_tag('form');
         echo html_writer::end_tag('details');
         $createcalendarhtml = ob_get_clean();
@@ -798,7 +997,10 @@ if (!$linkedblueprint) {
             echo html_writer::start_tag('li', ['class' => 'local-coursecalendar-blueprint-item']);
             echo html_writer::start_tag('details', ['class' => 'local-coursecalendar-blueprint-details']);
 
-            $builderurl = new moodle_url('/local/coursecalendar/calendar.php', ['id' => $courseid, 'calendarid' => (int)$calendar->id]);
+            $builderurl = new moodle_url(
+                '/local/coursecalendar/calendar.php',
+                ['id' => $courseid, 'calendarid' => (int)$calendar->id]
+            );
             echo html_writer::start_tag('summary', ['class' => 'local-coursecalendar-blueprint-summary']);
             echo html_writer::start_div('local-coursecalendar-blueprint-summary-main');
             echo html_writer::tag('span', $heading, ['class' => 'local-coursecalendar-blueprint-name']);
@@ -845,20 +1047,34 @@ if (!$linkedblueprint) {
                 'value' => s((string)$calendar->title),
             ]);
             echo html_writer::end_div();
-            echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-secondary', 'value' => get_string('savecalendarsubmit', 'local_coursecalendar')]);
+            echo html_writer::empty_tag('input', [
+                'type' => 'submit',
+                'class' => 'btn btn-secondary',
+                'value' => get_string('savecalendarsubmit', 'local_coursecalendar'),
+            ]);
             echo html_writer::end_tag('form');
 
             echo html_writer::start_div('local-coursecalendar-inline-controls');
-            foreach (['togglecalendaractive' => 'togglecalendarsubmit', 'deletecalendar' => 'deletecalendarsubmit'] as $calendaraction => $labelkey) {
+            $calendaractions = [
+                'togglecalendaractive' => 'togglecalendarsubmit',
+                'deletecalendar' => 'deletecalendarsubmit',
+            ];
+            foreach ($calendaractions as $calendaraction => $labelkey) {
                 echo html_writer::start_tag('form', ['method' => 'post', 'class' => 'local-coursecalendar-inline-form']);
                 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $courseid]);
                 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'calendarid', 'value' => (int)$calendar->id]);
                 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => $calendaraction]);
-                echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'blueprintctx', 'value' => $selectedblueprintid]);
+                echo html_writer::empty_tag(
+                    'input',
+                    ['type' => 'hidden', 'name' => 'blueprintctx', 'value' => $selectedblueprintid]
+                );
                 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'topicfilter', 'value' => $topicfilter]);
                 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
                 $buttonclass = ($calendaraction === 'deletecalendar') ? 'btn btn-outline-danger' : 'btn btn-outline-secondary';
-                echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => $buttonclass, 'value' => get_string($labelkey, 'local_coursecalendar')]);
+                echo html_writer::empty_tag(
+                    'input',
+                    ['type' => 'submit', 'class' => $buttonclass, 'value' => get_string($labelkey, 'local_coursecalendar')]
+                );
                 echo html_writer::end_tag('form');
             }
             echo html_writer::end_div();
@@ -896,7 +1112,11 @@ if (empty($allblueprints)) {
         echo html_writer::start_div('local-coursecalendar-blueprint-summary-main');
         echo html_writer::tag('span', format_string($blueprint->name), ['class' => 'local-coursecalendar-blueprint-name']);
         if (!empty($blueprint->shortcode)) {
-            echo html_writer::tag('span', format_string($blueprint->shortcode), ['class' => 'local-coursecalendar-blueprint-shortcode']);
+            echo html_writer::tag(
+                'span',
+                format_string($blueprint->shortcode),
+                ['class' => 'local-coursecalendar-blueprint-shortcode']
+            );
         }
         $blueprinttopiccount = $DB->count_records('local_coursecalendar_blueprint_topics', [
             'blueprintid' => (int)$blueprint->id,
@@ -958,7 +1178,11 @@ if (empty($allblueprints)) {
         echo html_writer::end_div();
 
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'updateblueprint']);
-        echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-secondary mr-2', 'value' => get_string('saveblueprintsubmit', 'local_coursecalendar')]);
+        echo html_writer::empty_tag('input', [
+            'type' => 'submit',
+            'class' => 'btn btn-secondary mr-2',
+            'value' => get_string('saveblueprintsubmit', 'local_coursecalendar'),
+        ]);
         echo html_writer::end_tag('form');
 
         echo html_writer::start_tag('form', ['method' => 'post', 'class' => 'local-coursecalendar-inline-form']);
@@ -966,7 +1190,9 @@ if (empty($allblueprints)) {
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'blueprintid', 'value' => $blueprint->id]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'togglearchive']);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-        $togglelabel = $isarchived ? get_string('unarchiveblueprintsubmit', 'local_coursecalendar') : get_string('archiveblueprintsubmit', 'local_coursecalendar');
+        $togglelabel = $isarchived
+            ? get_string('unarchiveblueprintsubmit', 'local_coursecalendar')
+            : get_string('archiveblueprintsubmit', 'local_coursecalendar');
         echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-outline-secondary', 'value' => $togglelabel]);
         echo html_writer::end_tag('form');
 
@@ -1003,8 +1229,15 @@ echo html_writer::start_tag('form', [
 ]);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $courseid]);
 echo html_writer::start_div('mb-2');
-echo html_writer::tag('label', get_string('topicblueprintcontextlabel', 'local_coursecalendar'), ['for' => 'local-coursecalendar-blueprintctx']);
-echo html_writer::start_tag('select', ['id' => 'local-coursecalendar-blueprintctx', 'name' => 'blueprintctx', 'class' => 'custom-select']);
+echo html_writer::tag(
+    'label',
+    get_string('topicblueprintcontextlabel', 'local_coursecalendar'),
+    ['for' => 'local-coursecalendar-blueprintctx']
+);
+echo html_writer::start_tag(
+    'select',
+    ['id' => 'local-coursecalendar-blueprintctx', 'name' => 'blueprintctx', 'class' => 'custom-select']
+);
 foreach ($allblueprints as $blueprint) {
     $attrs = ['value' => $blueprint->id];
     if ((int)$blueprint->id === (int)$selectedblueprint->id) {
@@ -1020,8 +1253,15 @@ echo html_writer::end_tag('select');
 echo html_writer::end_div();
 
 echo html_writer::start_div('mb-2');
-echo html_writer::tag('label', get_string('topicfilterlabel', 'local_coursecalendar'), ['for' => 'local-coursecalendar-topicfilter']);
-echo html_writer::start_tag('select', ['id' => 'local-coursecalendar-topicfilter', 'name' => 'topicfilter', 'class' => 'custom-select']);
+echo html_writer::tag(
+    'label',
+    get_string('topicfilterlabel', 'local_coursecalendar'),
+    ['for' => 'local-coursecalendar-topicfilter']
+);
+echo html_writer::start_tag(
+    'select',
+    ['id' => 'local-coursecalendar-topicfilter', 'name' => 'topicfilter', 'class' => 'custom-select']
+);
 $filteroptions = array_merge(['ALL'], local_coursecalendar_get_topic_types());
 foreach ($filteroptions as $filteroption) {
     $attrs = ['value' => $filteroption];
@@ -1033,7 +1273,10 @@ foreach ($filteroptions as $filteroption) {
 }
 echo html_writer::end_tag('select');
 echo html_writer::end_div();
-echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-secondary', 'value' => get_string('applyfilter', 'local_coursecalendar')]);
+echo html_writer::empty_tag(
+    'input',
+    ['type' => 'submit', 'class' => 'btn btn-secondary', 'value' => get_string('applyfilter', 'local_coursecalendar')]
+);
 echo html_writer::end_tag('form');
 
 $importurl = new moodle_url('/local/coursecalendar/import_topics.php', [
@@ -1041,7 +1284,11 @@ $importurl = new moodle_url('/local/coursecalendar/import_topics.php', [
     'blueprintid' => (int)$selectedblueprint->id,
 ]);
 echo html_writer::start_tag('div', ['class' => 'local-coursecalendar-page-actions mb-2']);
-echo html_writer::link($importurl, get_string('importtopicslink', 'local_coursecalendar'), ['class' => 'btn btn-sm btn-outline-primary mr-2']);
+echo html_writer::link(
+    $importurl,
+    get_string('importtopicslink', 'local_coursecalendar'),
+    ['class' => 'btn btn-sm btn-outline-primary mr-2']
+);
 echo html_writer::end_tag('div');
 
 $createtopichtml = '';
@@ -1064,7 +1311,11 @@ echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'topicfilter
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
 
 echo html_writer::start_div('mb-2');
-echo html_writer::tag('label', get_string('topictitlelabel', 'local_coursecalendar'), ['for' => 'local-coursecalendar-topictitle-new']);
+echo html_writer::tag(
+    'label',
+    get_string('topictitlelabel', 'local_coursecalendar'),
+    ['for' => 'local-coursecalendar-topictitle-new']
+);
 echo html_writer::empty_tag('input', [
     'type' => 'text',
     'id' => 'local-coursecalendar-topictitle-new',
@@ -1075,7 +1326,11 @@ echo html_writer::empty_tag('input', [
 echo html_writer::end_div();
 
 echo html_writer::start_div('mb-2');
-echo html_writer::tag('label', get_string('topictypelabel', 'local_coursecalendar'), ['for' => 'local-coursecalendar-topictype-new']);
+echo html_writer::tag(
+    'label',
+    get_string('topictypelabel', 'local_coursecalendar'),
+    ['for' => 'local-coursecalendar-topictype-new']
+);
 echo html_writer::start_tag('select', ['id' => 'local-coursecalendar-topictype-new', 'name' => 'type', 'class' => 'custom-select']);
 foreach (local_coursecalendar_get_topic_types() as $topictype) {
     echo html_writer::tag('option', $topictype, ['value' => $topictype]);
@@ -1084,7 +1339,11 @@ echo html_writer::end_tag('select');
 echo html_writer::end_div();
 
 echo html_writer::start_div('mb-2');
-echo html_writer::tag('label', get_string('topiccontentlabel', 'local_coursecalendar'), ['for' => 'local-coursecalendar-topiccontent-new']);
+echo html_writer::tag(
+    'label',
+    get_string('topiccontentlabel', 'local_coursecalendar'),
+    ['for' => 'local-coursecalendar-topiccontent-new']
+);
 echo html_writer::tag('textarea', '', [
     'id' => 'local-coursecalendar-topiccontent-new',
     'name' => 'contenthtml',
@@ -1093,7 +1352,10 @@ echo html_writer::tag('textarea', '', [
 ]);
 $topiceditor->use_editor('local-coursecalendar-topiccontent-new', $topiceditoroptions);
 echo html_writer::end_div();
-echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('createtopicsubmit', 'local_coursecalendar')]);
+echo html_writer::empty_tag(
+    'input',
+    ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('createtopicsubmit', 'local_coursecalendar')]
+);
 echo html_writer::end_tag('form');
 echo html_writer::end_tag('details');
 $createtopichtml = ob_get_clean();
@@ -1148,7 +1410,10 @@ if (empty($topics)) {
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $courseid]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'topicid', 'value' => (int)$topic->id]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'updatetopic']);
-        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'blueprintctx', 'value' => (int)$selectedblueprint->id]);
+        echo html_writer::empty_tag(
+            'input',
+            ['type' => 'hidden', 'name' => 'blueprintctx', 'value' => (int)$selectedblueprint->id]
+        );
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'topicfilter', 'value' => $topicfilter]);
         echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
 
@@ -1188,7 +1453,10 @@ if (empty($topics)) {
         $topiceditor->use_editor($topiccontentid, $topiceditoroptions);
         echo html_writer::end_div();
 
-        echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-secondary', 'value' => get_string('savetopicsubmit', 'local_coursecalendar')]);
+        echo html_writer::empty_tag(
+            'input',
+            ['type' => 'submit', 'class' => 'btn btn-secondary', 'value' => get_string('savetopicsubmit', 'local_coursecalendar')]
+        );
         echo html_writer::end_tag('form');
 
         echo html_writer::start_div('local-coursecalendar-inline-controls');
@@ -1197,11 +1465,17 @@ if (empty($topics)) {
             echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $courseid]);
             echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'topicid', 'value' => (int)$topic->id]);
             echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => $topicaction]);
-            echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'blueprintctx', 'value' => (int)$selectedblueprint->id]);
+            echo html_writer::empty_tag(
+                'input',
+                ['type' => 'hidden', 'name' => 'blueprintctx', 'value' => (int)$selectedblueprint->id]
+            );
             echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'topicfilter', 'value' => $topicfilter]);
             echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
             $buttonclass = ($topicaction === 'deletetopic') ? 'btn btn-outline-danger' : 'btn btn-outline-secondary';
-            echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => $buttonclass, 'value' => get_string($labelkey, 'local_coursecalendar')]);
+            echo html_writer::empty_tag(
+                'input',
+                ['type' => 'submit', 'class' => $buttonclass, 'value' => get_string($labelkey, 'local_coursecalendar')]
+            );
             echo html_writer::end_tag('form');
         }
         echo html_writer::end_div();
@@ -1230,4 +1504,3 @@ if ($selectedblueprint && !empty($topics)) {
 }
 
 echo $OUTPUT->footer();
-

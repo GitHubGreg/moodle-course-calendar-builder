@@ -117,6 +117,7 @@ define([
                     refreshSortOrderBadges(list);
                     return null;
                 })
+                .fail(Notification.exception)
                 .always(function() {
                     setSaving(list, false);
                 });

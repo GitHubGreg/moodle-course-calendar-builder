@@ -1,4 +1,27 @@
 <?php
+// This file is part of Moodle - https://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
+/**
+ * AI-assisted topic import wizard.
+ *
+ * @package    local_coursecalendar
+ * @copyright  2026 Greg Mulcair
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/locallib.php');
 
@@ -33,11 +56,21 @@ if ($action === 'extract' && data_submitted()) {
         $tmppath = $_FILES['inputpdf']['tmp_name'];
         $maxbytes = 20 * 1024 * 1024;
         if (($_FILES['inputpdf']['size'] ?? 0) > $maxbytes) {
-            redirect($pageurl, get_string('aiimportpdftoolarge', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+            redirect(
+                $pageurl,
+                get_string('aiimportpdftoolarge', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_ERROR
+            );
         }
         $pdfdata = @file_get_contents($tmppath);
         if ($pdfdata === false || $pdfdata === '' || strncmp($pdfdata, '%PDF-', 5) !== 0) {
-            redirect($pageurl, get_string('aiimportpdfinvalid', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+            redirect(
+                $pageurl,
+                get_string('aiimportpdfinvalid', 'local_coursecalendar'),
+                null,
+                \core\output\notification::NOTIFY_ERROR
+            );
         }
         $extractedjson = local_coursecalendar_gemini_extract_dates_from_pdf($apikey, $pdfdata);
     } else {
@@ -90,7 +123,12 @@ if ($action === 'applyrules' && data_submitted()) {
             }
         }
     }
-    redirect($rulesurl, get_string('aiimportapplied', 'local_coursecalendar', $created), null, \core\output\notification::NOTIFY_SUCCESS);
+    redirect(
+        $rulesurl,
+        get_string('aiimportapplied', 'local_coursecalendar', $created),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 }
 
 $PAGE->set_url($pageurl);
@@ -111,7 +149,8 @@ if (empty($apikey)) {
 }
 
 if (isset($extractedjson)) {
-    echo html_writer::tag('h4',
+    echo html_writer::tag(
+        'h4',
         get_string('aiimportresultlabel', 'local_coursecalendar')
         . ' ' . $OUTPUT->help_icon('aiimportresultlabel', 'local_coursecalendar'),
         ['class' => 'mt-3']
@@ -126,10 +165,14 @@ if (isset($extractedjson)) {
         'class' => 'form-control mb-2',
         'rows' => 12,
     ]);
-    echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('aiimportapplysubmit', 'local_coursecalendar')]);
+    echo html_writer::empty_tag(
+        'input',
+        ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('aiimportapplysubmit', 'local_coursecalendar')]
+    );
     echo html_writer::end_tag('form');
 } else {
-    echo html_writer::tag('h4',
+    echo html_writer::tag(
+        'h4',
         get_string('aiimportuploadlabel', 'local_coursecalendar')
         . ' ' . $OUTPUT->help_icon('aiimportuploadlabel', 'local_coursecalendar'),
         ['class' => 'mt-3']
@@ -142,7 +185,8 @@ if (isset($extractedjson)) {
         'role' => 'tablist',
         'id' => 'aiimport-tabs',
     ]);
-    echo html_writer::tag('li',
+    echo html_writer::tag(
+        'li',
         html_writer::tag('a', get_string('aiimporttabtext', 'local_coursecalendar'), [
             'class' => 'nav-link active',
             'id' => 'aiimport-tab-text',
@@ -155,7 +199,8 @@ if (isset($extractedjson)) {
         ]),
         ['class' => 'nav-item', 'role' => 'presentation']
     );
-    echo html_writer::tag('li',
+    echo html_writer::tag(
+        'li',
         html_writer::tag('a', get_string('aiimporttabpdf', 'local_coursecalendar'), [
             'class' => 'nav-link',
             'id' => 'aiimport-tab-pdf',
@@ -221,7 +266,8 @@ if (isset($extractedjson)) {
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'extract']);
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'source', 'value' => 'pdf']);
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-    echo html_writer::tag('p',
+    echo html_writer::tag(
+        'p',
         get_string('aiimportpdfhelp', 'local_coursecalendar'),
         ['class' => 'text-muted mb-2']
     );

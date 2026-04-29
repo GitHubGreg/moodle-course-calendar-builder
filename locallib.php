@@ -14,7 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-defined('MOODLE_INTERNAL') || die();
+/**
+ * Helper library.
+ *
+ * @package    local_coursecalendar
+ * @copyright  2026 Greg Mulcair
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 /**
  * Return all blueprints owned by a teacher.
@@ -146,7 +152,7 @@ function local_coursecalendar_get_autolink_suggestion(stdClass $course, int $use
         return null;
     }
 
-    usort($scored, static function(array $a, array $b): int {
+    usort($scored, static function (array $a, array $b): int {
         return $b['confidence'] <=> $a['confidence'];
     });
 
@@ -463,7 +469,11 @@ function local_coursecalendar_require_course_calendar(int $calendarid, int $cour
 function local_coursecalendar_get_blocks_map(int $calendarid): array {
     global $DB;
 
-    $records = $DB->get_records('local_coursecalendar_calendar_blocks', ['calendarid' => $calendarid], 'rownum ASC, colnum ASC, id ASC');
+    $records = $DB->get_records(
+        'local_coursecalendar_calendar_blocks',
+        ['calendarid' => $calendarid],
+        'rownum ASC, colnum ASC, id ASC'
+    );
     $map = [];
     foreach ($records as $record) {
         $row = (int)$record->rownum;
@@ -630,23 +640,60 @@ function local_coursecalendar_remove_last_week_row(int $calendarid): bool {
     return true;
 }
 
-// ========== Timeline exception rules ==========
+// Timeline exception rules.
 
+/**
+ * Return the allowed rule type identifiers.
+ *
+ * @return string[]
+ */
 function local_coursecalendar_get_rule_types(): array {
     return ['SEMESTER_START', 'SEMESTER_END', 'NO_CLASS', 'DAY_SWAP', 'OTHER'];
 }
 
+/**
+ * Fetch rules attached to a calendar.
+ *
+ * @param int $calendarid Calendar record ID.
+ * @param bool $activeonly If true, only return rules with isactive=1.
+ * @return array Ordered rule records.
+ */
 function local_coursecalendar_get_calendar_rules(int $calendarid, bool $activeonly = false): array {
     global $DB;
     $conditions = ['calendarid' => $calendarid];
     if ($activeonly) {
         $conditions['isactive'] = 1;
     }
-    return $DB->get_records('local_coursecalendar_timeline_exception_rules', $conditions, 'ruledate ASC, sortorder ASC, id ASC');
+    return $DB->get_records(
+        'local_coursecalendar_timeline_exception_rules',
+        $conditions,
+        'ruledate ASC, sortorder ASC, id ASC'
+    );
 }
 
-function local_coursecalendar_create_rule(int $calendarid, string $ruletype, int $ruledate,
-        string $label, string $description, ?string $fromday, ?string $today, int $userid): int {
+/**
+ * Create a new timeline exception rule.
+ *
+ * @param int $calendarid Calendar the rule belongs to.
+ * @param string $ruletype One of the values returned by {@see local_coursecalendar_get_rule_types()}.
+ * @param int $ruledate Epoch timestamp for the rule date.
+ * @param string $label Short label shown in the UI.
+ * @param string $description Longer description.
+ * @param string|null $fromday Day-swap source day (optional).
+ * @param string|null $today Day-swap target day (optional).
+ * @param int $userid User creating the rule.
+ * @return int ID of the inserted rule.
+ */
+function local_coursecalendar_create_rule(
+    int $calendarid,
+    string $ruletype,
+    int $ruledate,
+    string $label,
+    string $description,
+    ?string $fromday,
+    ?string $today,
+    int $userid
+): int {
     global $DB;
     $ruletype = core_text::strtoupper(trim($ruletype));
     if (!in_array($ruletype, local_coursecalendar_get_rule_types(), true)) {
@@ -670,8 +717,27 @@ function local_coursecalendar_create_rule(int $calendarid, string $ruletype, int
     return $DB->insert_record('local_coursecalendar_timeline_exception_rules', $record);
 }
 
-function local_coursecalendar_update_rule(int $ruleid, int $ruledate, string $label,
-        string $description, ?string $fromday, ?string $today, int $userid): void {
+/**
+ * Update an existing timeline exception rule.
+ *
+ * @param int $ruleid Rule ID to update.
+ * @param int $ruledate New epoch timestamp for the rule date.
+ * @param string $label New label.
+ * @param string $description New description.
+ * @param string|null $fromday Day-swap source day (optional).
+ * @param string|null $today Day-swap target day (optional).
+ * @param int $userid User making the change.
+ * @return void
+ */
+function local_coursecalendar_update_rule(
+    int $ruleid,
+    int $ruledate,
+    string $label,
+    string $description,
+    ?string $fromday,
+    ?string $today,
+    int $userid
+): void {
     global $DB;
     $record = $DB->get_record('local_coursecalendar_timeline_exception_rules', ['id' => $ruleid], '*', MUST_EXIST);
     $record->ruledate = $ruledate;
@@ -684,11 +750,24 @@ function local_coursecalendar_update_rule(int $ruleid, int $ruledate, string $la
     $DB->update_record('local_coursecalendar_timeline_exception_rules', $record);
 }
 
+/**
+ * Delete a timeline exception rule.
+ *
+ * @param int $ruleid Rule ID to delete.
+ * @return void
+ */
 function local_coursecalendar_delete_rule(int $ruleid): void {
     global $DB;
     $DB->delete_records('local_coursecalendar_timeline_exception_rules', ['id' => $ruleid]);
 }
 
+/**
+ * Toggle a rule between active/inactive and return the new state.
+ *
+ * @param int $ruleid Rule ID to toggle.
+ * @param int $userid User performing the toggle.
+ * @return bool New active state.
+ */
 function local_coursecalendar_toggle_rule(int $ruleid, int $userid): bool {
     global $DB;
     $record = $DB->get_record('local_coursecalendar_timeline_exception_rules', ['id' => $ruleid], '*', MUST_EXIST);
@@ -703,7 +782,8 @@ function local_coursecalendar_toggle_rule(int $ruleid, int $userid): bool {
  * Get the Monday of the week containing the given timestamp.
  */
 function local_coursecalendar_get_week_monday(int $timestamp): int {
-    $dow = (int)date('N', $timestamp); // 1=Mon ... 7=Sun
+    // PHP date('N'): 1 = Monday ... 7 = Sunday.
+    $dow = (int)date('N', $timestamp);
     return strtotime('-' . ($dow - 1) . ' days', strtotime(date('Y-m-d', $timestamp)));
 }
 
@@ -849,8 +929,9 @@ function local_coursecalendar_apply_rules(int $calendarid, int $userid): array {
         ]);
     }
 
-    // Step 3: Get header day mappings for NO_CLASS column matching.
-    $headerdaymap = []; // weekday name -> colnum
+    // Step 3: get header day mappings for NO_CLASS column matching.
+    // Weekday name => colnum.
+    $headerdaymap = [];
     for ($c = 1; $c <= 3; $c++) {
         $header = $DB->get_record('local_coursecalendar_calendar_blocks', [
             'calendarid' => $calendarid,
@@ -956,8 +1037,13 @@ function local_coursecalendar_apply_rules(int $calendarid, int $userid): array {
 /**
  * Append an annotation note to an existing week label block.
  */
-function local_coursecalendar_append_week_label_note(int $calendarid, int $rownum,
-        string $note, int $ruleid, int $userid): void {
+function local_coursecalendar_append_week_label_note(
+    int $calendarid,
+    int $rownum,
+    string $note,
+    int $ruleid,
+    int $userid
+): void {
     global $DB;
     $block = $DB->get_record('local_coursecalendar_calendar_blocks', [
         'calendarid' => $calendarid,
@@ -995,11 +1081,13 @@ function local_coursecalendar_compute_rules_hash(array $rules): string {
             'today' => $rule->today,
         ];
     }
-    usort($data, function($a, $b) { return $a['id'] <=> $b['id']; });
+    usort($data, function ($a, $b) {
+        return $a['id'] <=> $b['id'];
+    });
     return hash('sha256', json_encode($data));
 }
 
-// ========== Topic placement automation and coverage tools ==========
+// Topic placement automation and coverage tools.
 
 /**
  * Auto-populate a calendar grid with topics from the linked blueprint.
@@ -1043,7 +1131,8 @@ function local_coursecalendar_auto_populate(int $calendarid, int $blueprintid, i
         'sortorder ASC'
     );
 
-    $placedpositions = []; // topicid => ['row' => r, 'col' => c]
+    // Map topic id to the row/col position it was placed at.
+    $placedpositions = [];
     $topicqueue = array_values($lecturetopics);
     $tqi = 0;
 
@@ -1060,15 +1149,27 @@ function local_coursecalendar_auto_populate(int $calendarid, int $blueprintid, i
             $highlighted = 0;
             $vcentred = 0;
             if ($topic->type === 'ELESSON') {
-                $cellheading = '<div><span class="local-coursecalendar-elesson-notice">eLesson</span>'
-                    . '<span class="local-coursecalendar-elesson-sub">Do not come to class. Do eLesson before next lecture.</span></div>';
+                $notice = '<span class="local-coursecalendar-elesson-notice">eLesson</span>';
+                $sub = '<span class="local-coursecalendar-elesson-sub">'
+                    . 'Do not come to class. Do eLesson before next lecture.</span>';
+                $cellheading = '<div>' . $notice . $sub . '</div>';
             } else if ($topic->type === 'TEST') {
                 $highlighted = 1;
                 $vcentred = 1;
             }
             local_coursecalendar_upsert_block(
-                $calendarid, $row, $col, 'TOPIC', '', $userid,
-                null, null, (int)$topic->id, $cellheading, $highlighted, $vcentred
+                $calendarid,
+                $row,
+                $col,
+                'TOPIC',
+                '',
+                $userid,
+                null,
+                null,
+                (int)$topic->id,
+                $cellheading,
+                $highlighted,
+                $vcentred
             );
             $placedpositions[(int)$topic->id] = ['row' => $row, 'col' => $col];
             $blocksmap[$row][$col] = true;
@@ -1096,7 +1197,7 @@ function local_coursecalendar_auto_populate(int $calendarid, int $blueprintid, i
         $labpos = array_search((int)$lab->id, $sortedids);
         if ($labpos !== false) {
             for ($pi = $labpos - 1; $pi >= 0; $pi--) {
-                $prereqid = $sortedIds[$pi] ?? $sortedids[$pi];
+                $prereqid = $sortedids[$pi];
                 $prereqtopic = $allsorted[$prereqid] ?? null;
                 if ($prereqtopic && in_array($prereqtopic->type, ['LECTURE', 'ELESSON', 'TEST'], true)) {
                     if (isset($placedpositions[(int)$prereqid])) {
@@ -1114,8 +1215,15 @@ function local_coursecalendar_auto_populate(int $calendarid, int $blueprintid, i
                     continue;
                 }
                 local_coursecalendar_upsert_block(
-                    $calendarid, $row, $col, 'TOPIC', '', $userid,
-                    null, null, (int)$lab->id
+                    $calendarid,
+                    $row,
+                    $col,
+                    'TOPIC',
+                    '',
+                    $userid,
+                    null,
+                    null,
+                    (int)$lab->id
                 );
                 $blocksmap[$row][$col] = true;
                 $labsplaced++;
@@ -1140,8 +1248,15 @@ function local_coursecalendar_auto_populate(int $calendarid, int $blueprintid, i
         }
         $hw = $hwqueue[$hwi];
         local_coursecalendar_upsert_block(
-            $calendarid, $row, 4, 'TOPIC', '', $userid,
-            null, null, (int)$hw->id
+            $calendarid,
+            $row,
+            4,
+            'TOPIC',
+            '',
+            $userid,
+            null,
+            null,
+            (int)$hw->id
         );
         $blocksmap[$row][4] = true;
         $homeworkplaced++;
@@ -1180,8 +1295,18 @@ function local_coursecalendar_fill_problem_sessions(int $calendarid, int $userid
                 continue;
             }
             local_coursecalendar_upsert_block(
-                $calendarid, $row, $col, 'TEXT', 'Problem Session', $userid,
-                null, null, null, '', 0, 1
+                $calendarid,
+                $row,
+                $col,
+                'TEXT',
+                'Problem Session',
+                $userid,
+                null,
+                null,
+                null,
+                '',
+                0,
+                1
             );
             $filled++;
         }
@@ -1317,7 +1442,7 @@ function local_coursecalendar_delete_non_header_non_text_blocks(int $calendarid)
     return $deleted;
 }
 
-// ========== Course info and date-to-cell helpers ==========
+// Course info and date-to-cell helpers.
 
 /**
  * Get or create course_info record.
@@ -1327,6 +1452,15 @@ function local_coursecalendar_get_course_info(int $courseid): ?stdClass {
     return $DB->get_record('local_coursecalendar_course_info', ['courseid' => $courseid], '*', IGNORE_MISSING) ?: null;
 }
 
+/**
+ * Create or update the course info record (intro + links panels).
+ *
+ * @param int $courseid Course to save info for.
+ * @param string $introhtml Intro panel HTML.
+ * @param string $linkshtml Links panel HTML.
+ * @param int $userid User performing the save.
+ * @return void
+ */
 function local_coursecalendar_save_course_info(int $courseid, string $introhtml, string $linkshtml, int $userid): void {
     global $DB;
     $now = time();
@@ -1418,7 +1552,7 @@ function local_coursecalendar_date_to_cell(array $blocksmap, int $maxrow, int $t
     return null;
 }
 
-// ========== Migration helpers ==========
+// Migration helpers.
 
 /**
  * Parse pasted HTML table into blueprint topics.
@@ -1430,7 +1564,7 @@ function local_coursecalendar_date_to_cell(array $blocksmap, int $maxrow, int $t
  * @return array ['created' => int, 'skipped' => int]
  */
 function local_coursecalendar_seed_topics_from_html(string $html, string $layout, int $blueprintid, int $userid): array {
-    $skip_patterns = [
+    $skippatterns = [
         '/^\s*problem\s+session/i',
         '/^\s*college\s+closed/i',
         '/^\s*no\s+class/i',
@@ -1463,16 +1597,16 @@ function local_coursecalendar_seed_topics_from_html(string $html, string $layout
 
         for ($ci = 0; $ci < $cells->length; $ci++) {
             $cell = $cells->item($ci);
-            $innerHTML = '';
+            $innerhtml = '';
             foreach ($cell->childNodes as $child) {
-                $innerHTML .= $dom->saveHTML($child);
+                $innerhtml .= $dom->saveHTML($child);
             }
-            $text = trim(strip_tags($innerHTML));
+            $text = trim(strip_tags($innerhtml));
             if ($text === '') {
                 continue;
             }
 
-            foreach ($skip_patterns as $pat) {
+            foreach ($skippatterns as $pat) {
                 if (preg_match($pat, $text)) {
                     $skipped++;
                     continue 2;
@@ -1492,7 +1626,7 @@ function local_coursecalendar_seed_topics_from_html(string $html, string $layout
                 'blueprintid' => $blueprintid,
                 'title' => $title,
                 'type' => $type,
-                'contenthtml' => trim($innerHTML),
+                'contenthtml' => trim($innerhtml),
                 'sortorder' => $sortorder,
                 'isactive' => 1,
                 'timecreated' => $now,
@@ -1507,6 +1641,12 @@ function local_coursecalendar_seed_topics_from_html(string $html, string $layout
     return ['created' => $created, 'skipped' => $skipped];
 }
 
+/**
+ * Return the next available sort order for a topic in the given blueprint.
+ *
+ * @param int $blueprintid Blueprint ID.
+ * @return int Next sortorder to use.
+ */
 function local_coursecalendar_next_topic_sortorder(int $blueprintid): int {
     global $DB;
     $max = (int)$DB->get_field_sql(
@@ -1516,6 +1656,15 @@ function local_coursecalendar_next_topic_sortorder(int $blueprintid): int {
     return $max + 1;
 }
 
+/**
+ * Detect a topic type (LECTURE, LAB, TEST, ELESSON, HOMEWORK) from pasted cell text.
+ *
+ * @param string $text Cell text content.
+ * @param string $colmode Column mode ("Lecture" or "Lab").
+ * @param int $colindex 1-based column index.
+ * @param int $totalcols Total number of primary columns (excluding homework column).
+ * @return string Detected topic type code.
+ */
 function local_coursecalendar_detect_topic_type(string $text, string $colmode, int $colindex, int $totalcols): string {
     $lower = core_text::strtolower($text);
     if (preg_match('/^test|^exam|^midterm|^final\s+exam/i', $text)) {
@@ -1536,6 +1685,13 @@ function local_coursecalendar_detect_topic_type(string $text, string $colmode, i
     return 'LECTURE';
 }
 
+/**
+ * Extract a clean topic title from pasted cell text.
+ *
+ * @param string $text Cell text content.
+ * @param string $type Detected topic type (as returned by {@see local_coursecalendar_detect_topic_type()}).
+ * @return string Short title suitable for storing on the topic record.
+ */
 function local_coursecalendar_extract_topic_title(string $text, string $type): string {
     if ($type === 'TEST' || $type === 'LAB') {
         return mb_substr($text, 0, 120);
@@ -1594,10 +1750,12 @@ function local_coursecalendar_bulk_update_elesson_links(string $html, int $bluep
                 $firstbullet = trim($lines[0] ?? '');
             }
 
-            if ($firstbullet !== '' && (
+            if (
+                $firstbullet !== '' && (
                 stripos($link['text'], $firstbullet) !== false ||
                 stripos($firstbullet, $link['text']) !== false
-            )) {
+                )
+            ) {
                 $newcontent = preg_replace(
                     '/<a\b[^>]*>.*?' . preg_quote(htmlspecialchars($link['text']), '/') . '.*?<\/a>/i',
                     '<a href="' . s($link['href']) . '">' . s($link['text']) . '</a>',
@@ -1634,7 +1792,7 @@ function local_coursecalendar_bulk_update_elesson_links(string $html, int $bluep
     return ['updated' => $updated, 'notfound' => $notfound];
 }
 
-// ========== AI-assisted semester date extraction ==========
+// AI-assisted semester date extraction.
 
 /**
  * Build the Gemini extraction prompt.
@@ -1707,8 +1865,10 @@ function local_coursecalendar_gemini_call(string $apikey, array $parts): ?string
     }
 
     $text = trim($text);
-    if (strpos($text, '```') !== false) {
-        if (preg_match('/```(?:json)?\s*(.*?)\s*```/s', $text, $m)) {
+    // Gemini often wraps JSON in markdown code fences; strip them if present.
+    $fence = str_repeat(chr(96), 3);
+    if (strpos($text, $fence) !== false) {
+        if (preg_match('/' . $fence . '(?:json)?\s*(.*?)\s*' . $fence . '/s', $text, $m)) {
             $text = $m[1];
         }
     }

@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Plugin version information.
+ *
+ * @package    local_coursecalendar
+ * @copyright  2026 Greg Mulcair
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_coursecalendar';
@@ -21,4 +29,3 @@ $plugin->version   = 2026042406;
 $plugin->requires  = 2023042400;
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->release   = '0.1.0';
-

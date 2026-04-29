@@ -1,4 +1,27 @@
 <?php
+// This file is part of Moodle - https://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
+/**
+ * Embeddable calendar view.
+ *
+ * @package    local_coursecalendar
+ * @copyright  2026 Greg Mulcair
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/locallib.php');
 
@@ -78,7 +101,11 @@ for ($row = 0; $row <= $maxrow; $row++) {
             $typebadge = html_writer::tag('span', s($selectedtopic->type), [
                 'class' => 'local-coursecalendar-type-badge local-coursecalendar-type-' . strtolower($selectedtopic->type),
             ]);
-            echo html_writer::tag('div', $typebadge . ' ' . format_string($selectedtopic->title), ['class' => 'local-coursecalendar-topic-display']);
+            echo html_writer::tag(
+                'div',
+                $typebadge . ' ' . format_string($selectedtopic->title),
+                ['class' => 'local-coursecalendar-topic-display']
+            );
             if (!empty($selectedtopic->contenthtml)) {
                 $topichtml = format_text($selectedtopic->contenthtml, FORMAT_HTML);
                 $topichtml = preg_replace('/<a\b/', '<a target="_blank"', $topichtml);
@@ -105,7 +132,18 @@ echo html_writer::end_tag('table');
 echo html_writer::end_tag('div');
 
 if ($todayrow) {
-    echo '<script>document.addEventListener("DOMContentLoaded",function(){var r=document.querySelector(".local-coursecalendar-today-cell,.local-coursecalendar-nearest-row");if(r)r.scrollIntoView({behavior:"smooth",block:"center"});});</script>';
+    $scrollscript = <<<'JS'
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var selector = ".local-coursecalendar-today-cell,.local-coursecalendar-nearest-row";
+    var target = document.querySelector(selector);
+    if (target) {
+        target.scrollIntoView({behavior: "smooth", block: "center"});
+    }
+});
+</script>
+JS;
+    echo $scrollscript;
 }
 
 echo $OUTPUT->footer();

@@ -1,4 +1,27 @@
 <?php
+// This file is part of Moodle - https://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
+/**
+ * Topics import page.
+ *
+ * @package    local_coursecalendar
+ * @copyright  2026 Greg Mulcair
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/locallib.php');
 
@@ -35,21 +58,41 @@ if ($action !== '' && data_submitted()) {
                 $layout = 'LLL';
             }
             $result = local_coursecalendar_seed_topics_from_html($html, $layout, $blueprintid, (int)$USER->id);
-            redirect($pageurl, get_string('importtopicsdone', 'local_coursecalendar', $result), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $pageurl,
+                get_string('importtopicsdone', 'local_coursecalendar', $result),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'updateelessonlinks':
             $html = required_param('linkshtml', PARAM_RAW);
             $result = local_coursecalendar_bulk_update_elesson_links($html, $blueprintid);
-            redirect($pageurl, get_string('importelessonlinksdone', 'local_coursecalendar', $result), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $pageurl,
+                get_string('importelessonlinksdone', 'local_coursecalendar', $result),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
 
         case 'deletealltopics':
             $count = local_coursecalendar_delete_all_topics($blueprintid, true);
             if ($count < 0) {
-                redirect($pageurl, get_string('deletealltopicsblocked', 'local_coursecalendar'), null, \core\output\notification::NOTIFY_ERROR);
+                redirect(
+                    $pageurl,
+                    get_string('deletealltopicsblocked', 'local_coursecalendar'),
+                    null,
+                    \core\output\notification::NOTIFY_ERROR
+                );
             }
-            redirect($pageurl, get_string('deletealltopicsdone', 'local_coursecalendar', $count), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $pageurl,
+                get_string('deletealltopicsdone', 'local_coursecalendar', $count),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
             break;
     }
 }
@@ -67,7 +110,8 @@ echo html_writer::link($manageurl, get_string('backtomanage', 'local_coursecalen
 
 echo html_writer::div(get_string('intro_importtopics', 'local_coursecalendar'), 'local-coursecalendar-intro alert alert-info');
 
-echo html_writer::tag('h4',
+echo html_writer::tag(
+    'h4',
     get_string('importtopicsfromhtml', 'local_coursecalendar')
     . ' ' . $OUTPUT->help_icon('importtopicsfromhtml', 'local_coursecalendar'),
     ['class' => 'mt-3']
@@ -93,10 +137,14 @@ foreach ($layoutoptions as $key => $label) {
 }
 echo html_writer::end_tag('select');
 
-echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('importtopicssubmit', 'local_coursecalendar')]);
+echo html_writer::empty_tag(
+    'input',
+    ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('importtopicssubmit', 'local_coursecalendar')]
+);
 echo html_writer::end_tag('form');
 
-echo html_writer::tag('h4',
+echo html_writer::tag(
+    'h4',
     get_string('importelessonlinkslabel', 'local_coursecalendar')
     . ' ' . $OUTPUT->help_icon('importelessonlinkslabel', 'local_coursecalendar'),
     ['class' => 'mt-4']
@@ -114,10 +162,14 @@ echo html_writer::tag('textarea', '', [
     'required' => 'required',
 ]);
 
-echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('importelessonlinkssubmit', 'local_coursecalendar')]);
+echo html_writer::empty_tag(
+    'input',
+    ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('importelessonlinkssubmit', 'local_coursecalendar')]
+);
 echo html_writer::end_tag('form');
 
-echo html_writer::tag('h4',
+echo html_writer::tag(
+    'h4',
     get_string('importdangerzone', 'local_coursecalendar')
     . ' ' . $OUTPUT->help_icon('importdangerzone', 'local_coursecalendar'),
     ['class' => 'mt-4 text-danger']
@@ -128,7 +180,10 @@ echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'blueprintid', 'value' => $blueprintid]);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'deletealltopics']);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-danger', 'value' => get_string('deletealltopicsbtn', 'local_coursecalendar')]);
+echo html_writer::empty_tag(
+    'input',
+    ['type' => 'submit', 'class' => 'btn btn-danger', 'value' => get_string('deletealltopicsbtn', 'local_coursecalendar')]
+);
 echo html_writer::end_tag('form');
 
 echo $OUTPUT->footer();

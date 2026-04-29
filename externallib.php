@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * External web services.
+ *
+ * @package    local_coursecalendar
+ * @copyright  2026 Greg Mulcair
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/externallib.php');
@@ -22,9 +30,13 @@ require_once($CFG->libdir . '/externallib.php');
  * External functions for local_coursecalendar.
  */
 class local_coursecalendar_external extends external_api {
+    // Builder batch-save.
 
-    // --- Builder batch-save ---
-
+    /**
+     * Parameter definition for {@see save_builder_grid()}.
+     *
+     * @return external_function_parameters
+     */
     public static function save_builder_grid_parameters(): external_function_parameters {
         return new external_function_parameters([
             'courseid' => new external_value(PARAM_INT, 'Course ID'),
@@ -46,6 +58,14 @@ class local_coursecalendar_external extends external_api {
         ]);
     }
 
+    /**
+     * Persist the builder grid blocks for the given course calendar.
+     *
+     * @param int $courseid Course ID the builder is running in.
+     * @param int $calendarid Calendar record being edited.
+     * @param array $blocks Block definitions keyed by row/column.
+     * @return array{saved: int, status: string}
+     */
     public static function save_builder_grid(int $courseid, int $calendarid, array $blocks): array {
         global $USER;
         require_once(__DIR__ . '/locallib.php');
@@ -101,6 +121,11 @@ class local_coursecalendar_external extends external_api {
         return ['saved' => $saved, 'status' => 'ok'];
     }
 
+    /**
+     * Return definition for {@see save_builder_grid()}.
+     *
+     * @return external_single_structure
+     */
     public static function save_builder_grid_returns(): external_single_structure {
         return new external_single_structure([
             'saved' => new external_value(PARAM_INT, 'Number of blocks saved'),
@@ -108,8 +133,13 @@ class local_coursecalendar_external extends external_api {
         ]);
     }
 
-    // --- Swap two cells ---
+    // Swap two cells.
 
+    /**
+     * Parameter definition for {@see swap_builder_cells()}.
+     *
+     * @return external_function_parameters
+     */
     public static function swap_builder_cells_parameters(): external_function_parameters {
         return new external_function_parameters([
             'courseid' => new external_value(PARAM_INT, 'Course ID'),
@@ -121,8 +151,25 @@ class local_coursecalendar_external extends external_api {
         ]);
     }
 
-    public static function swap_builder_cells(int $courseid, int $calendarid,
-            int $fromrow, int $fromcol, int $torow, int $tocol): array {
+    /**
+     * Swap the contents of two builder cells within the same course calendar.
+     *
+     * @param int $courseid Course ID for capability checks.
+     * @param int $calendarid Calendar being edited.
+     * @param int $fromrow Source row number.
+     * @param int $fromcol Source column number.
+     * @param int $torow Destination row number.
+     * @param int $tocol Destination column number.
+     * @return array{status: string, message: string}
+     */
+    public static function swap_builder_cells(
+        int $courseid,
+        int $calendarid,
+        int $fromrow,
+        int $fromcol,
+        int $torow,
+        int $tocol
+    ): array {
         global $DB, $USER;
         require_once(__DIR__ . '/locallib.php');
 
@@ -141,51 +188,58 @@ class local_coursecalendar_external extends external_api {
         $calendar = local_coursecalendar_require_course_calendar($params['calendarid'], (int)$course->id);
         local_coursecalendar_require_owned_blueprint((int)$calendar->blueprintid, (int)$USER->id);
 
-        if ($params['fromrow'] <= 0 || $params['torow'] <= 0 ||
+        if (
+            $params['fromrow'] <= 0 || $params['torow'] <= 0 ||
             $params['fromcol'] < 1 || $params['fromcol'] > 4 ||
-            $params['tocol'] < 1 || $params['tocol'] > 4) {
+            $params['tocol'] < 1 || $params['tocol'] > 4
+        ) {
             return ['status' => 'error', 'message' => 'Invalid cell coordinates'];
         }
 
         $calid = (int)$calendar->id;
-        $blockA = $DB->get_record('local_coursecalendar_calendar_blocks', [
+        $blocka = $DB->get_record('local_coursecalendar_calendar_blocks', [
             'calendarid' => $calid, 'rownum' => $params['fromrow'], 'colnum' => $params['fromcol'],
         ], '*', IGNORE_MISSING);
-        $blockB = $DB->get_record('local_coursecalendar_calendar_blocks', [
+        $blockb = $DB->get_record('local_coursecalendar_calendar_blocks', [
             'calendarid' => $calid, 'rownum' => $params['torow'], 'colnum' => $params['tocol'],
         ], '*', IGNORE_MISSING);
 
         $now = time();
-        if ($blockA && $blockB) {
-            $tmpRow = $blockA->rownum;
-            $tmpCol = $blockA->colnum;
-            $blockA->rownum = $blockB->rownum;
-            $blockA->colnum = $blockB->colnum;
-            $blockA->timemodified = $now;
-            $blockA->usermodified = (int)$USER->id;
-            $blockB->rownum = $tmpRow;
-            $blockB->colnum = $tmpCol;
-            $blockB->timemodified = $now;
-            $blockB->usermodified = (int)$USER->id;
-            $DB->update_record('local_coursecalendar_calendar_blocks', $blockA);
-            $DB->update_record('local_coursecalendar_calendar_blocks', $blockB);
-        } else if ($blockA) {
-            $blockA->rownum = $params['torow'];
-            $blockA->colnum = $params['tocol'];
-            $blockA->timemodified = $now;
-            $blockA->usermodified = (int)$USER->id;
-            $DB->update_record('local_coursecalendar_calendar_blocks', $blockA);
-        } else if ($blockB) {
-            $blockB->rownum = $params['fromrow'];
-            $blockB->colnum = $params['fromcol'];
-            $blockB->timemodified = $now;
-            $blockB->usermodified = (int)$USER->id;
-            $DB->update_record('local_coursecalendar_calendar_blocks', $blockB);
+        if ($blocka && $blockb) {
+            $tmprow = $blocka->rownum;
+            $tmpcol = $blocka->colnum;
+            $blocka->rownum = $blockb->rownum;
+            $blocka->colnum = $blockb->colnum;
+            $blocka->timemodified = $now;
+            $blocka->usermodified = (int)$USER->id;
+            $blockb->rownum = $tmprow;
+            $blockb->colnum = $tmpcol;
+            $blockb->timemodified = $now;
+            $blockb->usermodified = (int)$USER->id;
+            $DB->update_record('local_coursecalendar_calendar_blocks', $blocka);
+            $DB->update_record('local_coursecalendar_calendar_blocks', $blockb);
+        } else if ($blocka) {
+            $blocka->rownum = $params['torow'];
+            $blocka->colnum = $params['tocol'];
+            $blocka->timemodified = $now;
+            $blocka->usermodified = (int)$USER->id;
+            $DB->update_record('local_coursecalendar_calendar_blocks', $blocka);
+        } else if ($blockb) {
+            $blockb->rownum = $params['fromrow'];
+            $blockb->colnum = $params['fromcol'];
+            $blockb->timemodified = $now;
+            $blockb->usermodified = (int)$USER->id;
+            $DB->update_record('local_coursecalendar_calendar_blocks', $blockb);
         }
 
         return ['status' => 'ok', 'message' => 'Cells swapped'];
     }
 
+    /**
+     * Return definition for {@see swap_builder_cells()}.
+     *
+     * @return external_single_structure
+     */
     public static function swap_builder_cells_returns(): external_single_structure {
         return new external_single_structure([
             'status' => new external_value(PARAM_ALPHA, 'Status'),
@@ -193,8 +247,13 @@ class local_coursecalendar_external extends external_api {
         ]);
     }
 
-    // --- Reorder blueprint topics (drag-and-drop) ---
+    // Reorder blueprint topics (drag-and-drop).
 
+    /**
+     * Parameter definition for {@see reorder_blueprint_topics()}.
+     *
+     * @return external_function_parameters
+     */
     public static function reorder_blueprint_topics_parameters(): external_function_parameters {
         return new external_function_parameters([
             'courseid' => new external_value(PARAM_INT, 'Course ID the request is being made from'),
@@ -271,6 +330,11 @@ class local_coursecalendar_external extends external_api {
         return ['status' => 'ok', 'saved' => count($submittedids)];
     }
 
+    /**
+     * Return definition for {@see reorder_blueprint_topics()}.
+     *
+     * @return external_single_structure
+     */
     public static function reorder_blueprint_topics_returns(): external_single_structure {
         return new external_single_structure([
             'status' => new external_value(PARAM_ALPHA, 'Status'),
