@@ -1,5 +1,7 @@
 # Course Calendar (`local_coursecalendar`)
 
+[![Moodle Plugin CI](https://github.com/GitHubGreg/moodle-course-calendar-builder/actions/workflows/moodle-ci.yml/badge.svg?branch=main)](https://github.com/GitHubGreg/moodle-course-calendar-builder/actions/workflows/moodle-ci.yml)
+
 A Moodle local plugin that lets teachers define reusable course content once, build semester calendars from that content, and publish a student-facing calendar view inside Moodle.
 
 | | |
