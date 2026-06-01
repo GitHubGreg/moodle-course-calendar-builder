@@ -143,32 +143,6 @@ echo html_writer::empty_tag(
 );
 echo html_writer::end_tag('form');
 
-// Hidden for now - "Paste HTML with eLesson links" section. May re-enable in the future.
-// echo html_writer::tag(
-//     'h4',
-//     get_string('importelessonlinkslabel', 'local_coursecalendar')
-//     . ' ' . $OUTPUT->help_icon('importelessonlinkslabel', 'local_coursecalendar'),
-//     ['class' => 'mt-4']
-// );
-// echo html_writer::start_tag('form', ['method' => 'post', 'class' => 'local-coursecalendar-card']);
-// echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $courseid]);
-// echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'blueprintid', 'value' => $blueprintid]);
-// echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'updateelessonlinks']);
-// echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-//
-// echo html_writer::tag('textarea', '', [
-//     'name' => 'linkshtml',
-//     'class' => 'form-control mb-2',
-//     'rows' => 6,
-//     'required' => 'required',
-// ]);
-//
-// echo html_writer::empty_tag(
-//     'input',
-//     ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('importelessonlinkssubmit', 'local_coursecalendar')]
-// );
-// echo html_writer::end_tag('form');
-
 echo html_writer::tag(
     'h4',
     get_string('importdangerzone', 'local_coursecalendar')

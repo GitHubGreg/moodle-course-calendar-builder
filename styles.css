@@ -85,13 +85,14 @@
     text-align: center;
     color: #98a2b3;
     background-color: #f1f3f5;
-    background-image: repeating-linear-gradient(
-        135deg,
-        rgba(152, 162, 179, 0.12),
-        rgba(152, 162, 179, 0.12) 6px,
-        rgba(152, 162, 179, 0) 6px,
-        rgba(152, 162, 179, 0) 12px
-    );
+    background-image:
+        repeating-linear-gradient(
+            135deg,
+            rgba(152, 162, 179, 0.12),
+            rgba(152, 162, 179, 0.12) 6px,
+            rgba(152, 162, 179, 0) 6px,
+            rgba(152, 162, 179, 0) 12px
+        );
 }
 
 .local-coursecalendar-blank-label {
