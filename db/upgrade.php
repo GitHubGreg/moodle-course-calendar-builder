@@ -81,5 +81,21 @@ function xmldb_local_coursecalendar_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026042406, 'local', 'coursecalendar');
     }
 
+    if ($oldversion < 2026052800) {
+        local_coursecalendar_install_user_tours();
+        upgrade_plugin_savepoint(true, 2026052800, 'local', 'coursecalendar');
+    }
+
+    if ($oldversion < 2026053001) {
+        // Blueprint matching is now name-based; drop the obsolete shortcode column.
+        $dbman = $DB->get_manager();
+        $table = new xmldb_table('local_coursecalendar_blueprints');
+        $field = new xmldb_field('shortcode');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+        upgrade_plugin_savepoint(true, 2026053001, 'local', 'coursecalendar');
+    }
+
     return true;
 }

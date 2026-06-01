@@ -13,6 +13,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         courseid: 0,
         calendarid: 0,
         dirty: false,
+        submitting: false,
         undoStack: [],
         redoStack: [],
         dragSource: null,
@@ -25,7 +26,6 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         undoBtn: '#local-coursecalendar-undo',
         redoBtn: '#local-coursecalendar-redo',
         badge: '#local-coursecalendar-unsaved-badge',
-        copyIframeBtn: '#local-coursecalendar-copy-iframe',
     };
 
     /**
@@ -357,55 +357,42 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
     }
 
     /**
-     * Show the iframe embed code in a textarea the user can copy from manually.
+     * Show or hide the topic dropdown for a cell editor based on the
+     * selected block type. The topic dropdown is only relevant for
+     * TOPIC cells, so it is hidden (and disabled, to keep it out of the
+     * submitted form data) when TEXT is selected.
      *
-     * @param {string} iframe The iframe HTML to show.
+     * @param {HTMLSelectElement} blocktypeSelect The block-type <select>.
      */
-    function showIframeFallback(iframe) {
-        Notification.addNotification({
-            message: 'Clipboard unavailable. Copy the iframe code from the textarea above.',
-            type: 'warning',
-        });
-        var ta = document.createElement('textarea');
-        ta.value = iframe;
-        ta.readOnly = true;
-        ta.style.width = '100%';
-        ta.style.minHeight = '80px';
-        ta.style.marginTop = '8px';
-        var btn = document.querySelector(SELECTORS.copyIframeBtn);
-        if (btn && btn.parentNode) {
-            btn.parentNode.insertBefore(ta, btn.nextSibling);
-            ta.select();
+    function toggleTopicSelect(blocktypeSelect) {
+        var form = blocktypeSelect.closest('form');
+        if (!form) {
+            return;
         }
+        var topicSelect = form.querySelector('select[name="topicid"]');
+        if (!topicSelect) {
+            return;
+        }
+        var isTopic = blocktypeSelect.value === 'TOPIC';
+        topicSelect.style.display = isTopic ? '' : 'none';
+        topicSelect.disabled = !isTopic;
     }
 
     /**
-     * Copy the embeddable iframe HTML for this calendar to the clipboard.
+     * Wire up each cell editor so the topic dropdown visibility tracks the
+     * selected block type, both on initial render and on subsequent changes.
      */
-    function copyIframeCode() {
-        var btn = document.querySelector(SELECTORS.copyIframeBtn);
-        if (!btn) {
+    function bindCellEditors() {
+        var grid = document.querySelector(SELECTORS.grid);
+        if (!grid) {
             return;
         }
-        var previewUrl = btn.getAttribute('data-preview-url');
-        if (!previewUrl) {
-            return;
-        }
-        var iframe = '<iframe src="' + previewUrl + '" width="100%" height="600" ' +
-            'style="border:1px solid #ccc;" loading="lazy"></iframe>';
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(iframe).then(function() {
-                Notification.addNotification({
-                    message: 'Iframe code copied to clipboard.',
-                    type: 'success',
-                });
-                return true;
-            }).catch(function() {
-                showIframeFallback(iframe);
+        grid.querySelectorAll('select[name="blocktype"]').forEach(function(sel) {
+            toggleTopicSelect(sel);
+            sel.addEventListener('change', function() {
+                toggleTopicSelect(sel);
             });
-        } else {
-            showIframeFallback(iframe);
-        }
+        });
     }
 
     /**
@@ -437,7 +424,15 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
 
             bindDragEvents();
             bindChangeTracking();
+            bindCellEditors();
             updateUI();
+
+            // A real form submission (e.g. Save cell) is an intentional
+            // navigation that persists data server-side, so it should not
+            // trigger the unsaved-changes warning.
+            document.addEventListener('submit', function() {
+                state.submitting = true;
+            });
 
             var saveBtn = document.querySelector(SELECTORS.saveAllBtn);
             if (saveBtn) {
@@ -463,14 +458,6 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 });
             }
 
-            var copyBtn = document.querySelector(SELECTORS.copyIframeBtn);
-            if (copyBtn) {
-                copyBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    copyIframeCode();
-                });
-            }
-
             // Keyboard shortcuts: Ctrl+S to save, Ctrl+Z undo, Ctrl+Shift+Z redo.
             document.addEventListener('keydown', function(e) {
                 if ((e.ctrlKey || e.metaKey) && !e.altKey) {
@@ -490,7 +477,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             });
 
             window.addEventListener('beforeunload', function(e) {
-                if (state.dirty) {
+                if (state.dirty && !state.submitting) {
                     e.preventDefault();
                     e.returnValue = '';
                 }

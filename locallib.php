@@ -198,28 +198,46 @@ function local_coursecalendar_get_course_match_text(stdClass $course): string {
 }
 
 /**
- * Score how likely a blueprint matches course metadata.
+ * Score how likely a blueprint matches course metadata, based on its name.
+ *
+ * A full-name match against the course text is the strongest signal; failing
+ * that, the name's individual words are matched so a blueprint like
+ * "Physics NYC SN3" still scores well against a course whose code contains
+ * "SN3".
  *
  * @param stdClass $blueprint
- * @param string $coursematchtext
- * @return int
+ * @param string $coursematchtext Uppercased course metadata (see {@see local_coursecalendar_course_match_text()}).
+ * @return int Confidence score from 0-100.
  */
 function local_coursecalendar_score_blueprint_match(stdClass $blueprint, string $coursematchtext): int {
-    $score = 0;
-
-    $shortcode = trim((string)$blueprint->shortcode);
-    if ($shortcode !== '') {
-        $token = preg_quote(core_text::strtoupper($shortcode), '/');
-        if (preg_match('/\b' . $token . '\b/u', $coursematchtext)) {
-            $score += 70;
-        } else if (str_contains($coursematchtext, core_text::strtoupper($shortcode))) {
-            $score += 50;
-        }
+    $name = core_text::strtoupper(trim((string)$blueprint->name));
+    if ($name === '' || trim($coursematchtext) === '') {
+        return 0;
     }
 
-    $name = trim((string)$blueprint->name);
-    if ($name !== '' && str_contains($coursematchtext, core_text::strtoupper($name))) {
-        $score += 40;
+    $score = 0;
+
+    // Strongest signal: the whole blueprint name appears in the course metadata.
+    if (str_contains($coursematchtext, $name)) {
+        $score += 80;
+    }
+
+    // Otherwise reward individual name words that match course metadata.
+    $tokens = preg_split('/[^\p{L}\p{N}]+/u', $name, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    $tokens = array_values(array_unique(array_filter($tokens, static function (string $t): bool {
+        return core_text::strlen($t) >= 2;
+    })));
+    if ($tokens) {
+        $matched = 0.0;
+        foreach ($tokens as $token) {
+            $quoted = preg_quote($token, '/');
+            if (preg_match('/\b' . $quoted . '\b/u', $coursematchtext)) {
+                $matched += 1.0;
+            } else if (str_contains($coursematchtext, $token)) {
+                $matched += 0.5;
+            }
+        }
+        $score += (int)round(60 * ($matched / count($tokens)));
     }
 
     return min($score, 100);
@@ -246,6 +264,51 @@ function local_coursecalendar_normalise_topic_type(string $type): string {
         throw new moodle_exception('invalidtopictype', 'local_coursecalendar');
     }
     return $type;
+}
+
+/**
+ * Topic types whose title/badge heading is hidden in the calendar display.
+ *
+ * Lectures and labs are shown as their content only (matching the clean weekly
+ * grid). Their content already leads with the relevant heading ("Pre-class
+ * reading", "Lab N - ...") so a separate badge + title is redundant noise.
+ *
+ * @param string $type Topic type code.
+ * @return bool True when the heading should be suppressed.
+ */
+function local_coursecalendar_topic_heading_is_hidden(string $type): bool {
+    return in_array(core_text::strtoupper($type), ['LECTURE', 'LAB'], true);
+}
+
+/**
+ * Build the heading line (type badge + title) shown above a placed topic's content.
+ *
+ * Returns an empty string for topic types whose heading is hidden (see
+ * {@see local_coursecalendar_topic_heading_is_hidden()}), unless a $suffix is
+ * supplied (e.g. an "inactive" flag in the builder) which must always be shown.
+ *
+ * @param stdClass $topic Topic record (uses ->type and ->title).
+ * @param string $suffix Optional trailing HTML always rendered when present.
+ * @return string HTML for the heading div, or '' when nothing should be shown.
+ */
+function local_coursecalendar_topic_heading_html(stdClass $topic, string $suffix = ''): string {
+    $type = (string)$topic->type;
+
+    if (local_coursecalendar_topic_heading_is_hidden($type)) {
+        if (trim($suffix) === '') {
+            return '';
+        }
+        return html_writer::tag('div', $suffix, ['class' => 'local-coursecalendar-topic-display']);
+    }
+
+    $badge = html_writer::tag('span', s($type), [
+        'class' => 'local-coursecalendar-type-badge local-coursecalendar-type-' . strtolower($type),
+    ]);
+    return html_writer::tag(
+        'div',
+        $badge . ' ' . format_string($topic->title) . $suffix,
+        ['class' => 'local-coursecalendar-topic-display']
+    );
 }
 
 /**
@@ -572,6 +635,17 @@ function local_coursecalendar_upsert_block(
 function local_coursecalendar_ensure_base_grid(int $calendarid, int $userid): void {
     global $DB;
 
+    // Only seed the default header row for a brand-new calendar. Once any header
+    // cell exists we respect the current set of columns so teacher-deleted columns
+    // are not silently recreated on the next page load.
+    $hasheader = $DB->record_exists('local_coursecalendar_calendar_blocks', [
+        'calendarid' => $calendarid,
+        'rownum' => 0,
+    ]);
+    if ($hasheader) {
+        return;
+    }
+
     $defaults = [
         0 => ['content' => 'Week # / Week of', 'day' => null, 'mode' => null],
         1 => ['content' => 'Day A', 'day' => 'Monday', 'mode' => 'Lecture'],
@@ -581,14 +655,6 @@ function local_coursecalendar_ensure_base_grid(int $calendarid, int $userid): vo
     ];
 
     foreach ($defaults as $col => $config) {
-        $existing = $DB->get_record('local_coursecalendar_calendar_blocks', [
-            'calendarid' => $calendarid,
-            'rownum' => 0,
-            'colnum' => $col,
-        ], 'id', IGNORE_MISSING);
-        if ($existing) {
-            continue;
-        }
         local_coursecalendar_upsert_block(
             $calendarid,
             0,
@@ -600,6 +666,58 @@ function local_coursecalendar_ensure_base_grid(int $calendarid, int $userid): vo
             $config['mode']
         );
     }
+}
+
+/**
+ * Determine the ordered set of grid columns for a calendar based on the header row.
+ *
+ * The week-label column (0) is always present. Other columns exist only while a
+ * header cell exists for them, so deleting a column removes it from every page.
+ *
+ * @param array $blocksmap Block map keyed by [rownum][colnum].
+ * @return int[] Sorted list of column numbers.
+ */
+function local_coursecalendar_get_grid_columns(array $blocksmap): array {
+    if (empty($blocksmap[0]) || !is_array($blocksmap[0])) {
+        return [0, 1, 2, 3, 4];
+    }
+    $cols = array_map('intval', array_keys($blocksmap[0]));
+    if (!in_array(0, $cols, true)) {
+        $cols[] = 0;
+    }
+    sort($cols);
+    return $cols;
+}
+
+/**
+ * Delete an entire grid column (header and all week-row cells) from a calendar.
+ *
+ * The week-label column (0) cannot be deleted.
+ *
+ * @param int $calendarid
+ * @param int $colnum
+ * @return bool True if the column existed and was deleted.
+ */
+function local_coursecalendar_delete_column(int $calendarid, int $colnum): bool {
+    global $DB;
+
+    if ($colnum < 1) {
+        return false;
+    }
+
+    $exists = $DB->record_exists('local_coursecalendar_calendar_blocks', [
+        'calendarid' => $calendarid,
+        'colnum' => $colnum,
+    ]);
+    if (!$exists) {
+        return false;
+    }
+
+    $DB->delete_records('local_coursecalendar_calendar_blocks', [
+        'calendarid' => $calendarid,
+        'colnum' => $colnum,
+    ]);
+    return true;
 }
 
 /**
@@ -1002,6 +1120,72 @@ function local_coursecalendar_apply_rules(int $calendarid, int $userid): array {
         $noclassplaced++;
     }
 
+    // Step 4b: Grey out day cells that fall outside the teaching term -- the
+    // days before the semester start in week 1, and the days after the semester
+    // end in the final week. These BLANK cells are rule-generated (so they are
+    // refreshed on every apply) and, because they occupy the cell, they make
+    // auto-populate skip non-teaching days automatically.
+    $daytooffset = [
+        'monday' => 0, 'tuesday' => 1, 'wednesday' => 2, 'thursday' => 3,
+        'friday' => 4, 'saturday' => 5, 'sunday' => 6,
+    ];
+    // Reuse the (weekday name => column) map built in Step 3 for NO_CLASS,
+    // inverting it to (column => weekday offset from Monday).
+    $coloffsets = [];
+    foreach ($headerdaymap as $dayname => $colnum) {
+        if (isset($daytooffset[$dayname])) {
+            $coloffsets[$colnum] = $daytooffset[$dayname];
+        }
+    }
+    $startmidnight = strtotime(date('Y-m-d', $startdate));
+    $endmidnight = strtotime(date('Y-m-d', $enddate));
+    $blankplaced = 0;
+    $blankweeks = [1 => $startmonday];
+    $blankweeks[$totalweeks] = $endmonday;
+    foreach ($blankweeks as $rownum => $monday) {
+        foreach ($coloffsets as $colnum => $offset) {
+            $celldate = strtotime('+' . $offset . ' days', $monday);
+            $beforestart = ($rownum === 1 && $celldate < $startmidnight);
+            $afterend = ($rownum === $totalweeks && $celldate > $endmidnight);
+            if (!$beforestart && !$afterend) {
+                continue;
+            }
+
+            // Never overwrite a teacher-placed block.
+            $existingcell = $DB->get_record('local_coursecalendar_calendar_blocks', [
+                'calendarid' => $calendarid,
+                'rownum' => $rownum,
+                'colnum' => $colnum,
+            ], 'id, generatedbyrule', IGNORE_MISSING);
+            if ($existingcell && (int)$existingcell->generatedbyrule === 0) {
+                continue;
+            }
+
+            $labelkey = $beforestart ? 'blankbeforestart' : 'blankafterend';
+            $blankblock = (object)[
+                'calendarid' => $calendarid,
+                'rownum' => $rownum,
+                'colnum' => $colnum,
+                'blocktype' => 'BLANK',
+                'contenthtml' => get_string($labelkey, 'local_coursecalendar'),
+                'verticallycentred' => 1,
+                'highlighted' => 0,
+                'generatedbyrule' => 1,
+                'generatedruleid' => null,
+                'timecreated' => $now,
+                'timemodified' => $now,
+                'usermodified' => $userid,
+            ];
+            if ($existingcell) {
+                $blankblock->id = $existingcell->id;
+                $DB->update_record('local_coursecalendar_calendar_blocks', $blankblock);
+            } else {
+                $DB->insert_record('local_coursecalendar_calendar_blocks', $blankblock);
+            }
+            $blankplaced++;
+        }
+    }
+
     // Step 5: DAY_SWAP annotations on week labels.
     foreach ($dayswaprules as $rule) {
         $rulemonday = local_coursecalendar_get_week_monday((int)$rule->ruledate);
@@ -1031,6 +1215,7 @@ function local_coursecalendar_apply_rules(int $calendarid, int $userid): array {
         'week_labels_generated' => $inserted,
         'total_weeks' => $totalweeks,
         'noclass_placed' => $noclassplaced,
+        'blank_placed' => $blankplaced,
         'dayswap_rules' => count($dayswaprules),
         'other_rules' => count($otherrules),
     ];
@@ -1172,12 +1357,7 @@ function local_coursecalendar_auto_populate(int $calendarid, int $blueprintid, i
             $cellheading = '';
             $highlighted = 0;
             $vcentred = 0;
-            if ($topic->type === 'ELESSON') {
-                $notice = '<span class="local-coursecalendar-elesson-notice">eLesson</span>';
-                $sub = '<span class="local-coursecalendar-elesson-sub">'
-                    . 'Do not come to class. Do eLesson before next lecture.</span>';
-                $cellheading = '<div>' . $notice . $sub . '</div>';
-            } else if ($topic->type === 'TEST') {
+            if ($topic->type === 'TEST') {
                 $highlighted = 1;
                 $vcentred = 1;
             }
@@ -1216,8 +1396,32 @@ function local_coursecalendar_auto_populate(int $calendarid, int $blueprintid, i
     );
     $sortedids = array_keys($allsorted);
 
+    // Build a chronological rank for each cell so a lab can be ordered against
+    // the lecture it follows: same week when the lab's weekday is later than the
+    // lecture's, otherwise a following week. Weekday offsets are 0-6, so a rank
+    // of row*10 + offset keeps weeks strictly ordered.
+    $daytooffset = [
+        'monday' => 0, 'tuesday' => 1, 'wednesday' => 2, 'thursday' => 3,
+        'friday' => 4, 'saturday' => 5, 'sunday' => 6,
+    ];
+    $coldayoffset = [];
+    for ($c = 1; $c <= 3; $c++) {
+        $header = $blocksmap[0][$c] ?? null;
+        if ($header && !empty($header->headerday)) {
+            $dn = core_text::strtolower((string)$header->headerday);
+            if (isset($daytooffset[$dn])) {
+                $coldayoffset[$c] = $daytooffset[$dn];
+            }
+        }
+    }
+    $cellrank = function (int $row, int $col) use ($coldayoffset): int {
+        return $row * 10 + ($coldayoffset[$col] ?? 0);
+    };
+
     foreach ($labtopics as $lab) {
-        $prereqrow = 1;
+        // Find the lecture/eLesson/test immediately preceding this lab in the
+        // blueprint order, and the cell it actually landed in.
+        $prereqrank = 0;
         $labpos = array_search((int)$lab->id, $sortedids);
         if ($labpos !== false) {
             for ($pi = $labpos - 1; $pi >= 0; $pi--) {
@@ -1225,17 +1429,24 @@ function local_coursecalendar_auto_populate(int $calendarid, int $blueprintid, i
                 $prereqtopic = $allsorted[$prereqid] ?? null;
                 if ($prereqtopic && in_array($prereqtopic->type, ['LECTURE', 'ELESSON', 'TEST'], true)) {
                     if (isset($placedpositions[(int)$prereqid])) {
-                        $prereqrow = $placedpositions[(int)$prereqid]['row'] + 1;
+                        $pos = $placedpositions[(int)$prereqid];
+                        $prereqrank = $cellrank((int)$pos['row'], (int)$pos['col']);
                     }
                     break;
                 }
             }
         }
 
+        // Place the lab in the earliest empty lab cell that occurs after the
+        // prerequisite lecture. Blanked (out-of-term) cells are already present
+        // in the block map, so they are skipped here automatically.
         $placed = false;
-        for ($row = $prereqrow; $row <= $maxrow; $row++) {
+        for ($row = 1; $row <= $maxrow && !$placed; $row++) {
             foreach ($labcols as $col) {
                 if (isset($blocksmap[$row][$col])) {
+                    continue;
+                }
+                if ($cellrank($row, $col) <= $prereqrank) {
                     continue;
                 }
                 local_coursecalendar_upsert_block(
@@ -1252,7 +1463,7 @@ function local_coursecalendar_auto_populate(int $calendarid, int $blueprintid, i
                 $blocksmap[$row][$col] = true;
                 $labsplaced++;
                 $placed = true;
-                break 2;
+                break;
             }
         }
     }
@@ -1590,6 +1801,149 @@ function local_coursecalendar_date_to_cell(array $blocksmap, int $maxrow, int $t
     return null;
 }
 
+/**
+ * Return the active semester calendar for a course, if any.
+ *
+ * @param int $courseid
+ * @return stdClass|null The active calendar record, or null when none is active.
+ */
+function local_coursecalendar_get_active_course_calendar(int $courseid): ?stdClass {
+    $calendars = local_coursecalendar_get_course_calendars($courseid);
+    foreach ($calendars as $calendar) {
+        if ((int)$calendar->isactive === 1) {
+            return $calendar;
+        }
+    }
+    return null;
+}
+
+/**
+ * Render the read-only student-facing calendar grid as an HTML string.
+ *
+ * Shared by the embeddable page (embed.php) and the course block so the grid
+ * markup stays in one place.
+ *
+ * @param stdClass $calendar Semester calendar record.
+ * @param bool $autoscroll When true, emit a script that scrolls the nearest/today row into view.
+ * @return string Grid HTML, or '' when the calendar has no content.
+ */
+function local_coursecalendar_render_calendar_grid(stdClass $calendar, bool $autoscroll = true): string {
+    $alltopics = local_coursecalendar_get_blueprint_topics((int)$calendar->blueprintid, true);
+    $blocksmap = local_coursecalendar_get_blocks_map((int)$calendar->id);
+    $maxrow = 0;
+    foreach (array_keys($blocksmap) as $rownum) {
+        $maxrow = max($maxrow, (int)$rownum);
+    }
+    if ($maxrow === 0 && empty($blocksmap)) {
+        return '';
+    }
+    $columns = local_coursecalendar_get_grid_columns($blocksmap);
+
+    // Compute today/nearest cell for highlighting.
+    $now = new DateTime('now', new DateTimeZone('America/Toronto'));
+    $todaycell = local_coursecalendar_date_to_cell($blocksmap, $maxrow, $now->getTimestamp());
+    $todayrow = $todaycell ? ($todaycell['row'] ?? null) : null;
+    $todaycol = $todaycell ? ($todaycell['col'] ?? null) : null;
+    $nearestonly = $todaycell && !empty($todaycell['nearest']);
+
+    $out = html_writer::start_tag('div', ['class' => 'local-coursecalendar-embed']);
+    $out .= html_writer::start_tag('table', [
+        'class' => 'table table-bordered local-coursecalendar-grid local-coursecalendar-preview',
+    ]);
+    for ($row = 0; $row <= $maxrow; $row++) {
+        $rowclasses = [];
+        if ($row === $todayrow && ($nearestonly || $todaycol === null)) {
+            $rowclasses[] = 'local-coursecalendar-nearest-row';
+        }
+        $out .= html_writer::start_tag('tr', $rowclasses ? ['class' => implode(' ', $rowclasses)] : []);
+        foreach ($columns as $col) {
+            $cell = $blocksmap[$row][$col] ?? null;
+            $content = $cell ? (string)$cell->contenthtml : '';
+            $blocktype = $cell ? (string)$cell->blocktype : '';
+            $cellheading = $cell ? (string)$cell->cellheading : '';
+            $highlighted = $cell && (int)$cell->highlighted === 1;
+            $verticallycentred = $cell && (int)$cell->verticallycentred === 1;
+            $selectedtopicid = ($cell && !empty($cell->topicid)) ? (int)$cell->topicid : 0;
+            $selectedtopic = ($selectedtopicid > 0 && isset($alltopics[$selectedtopicid])) ? $alltopics[$selectedtopicid] : null;
+
+            $isblank = ($blocktype === 'BLANK');
+
+            $tag = ($row === 0) ? 'th' : 'td';
+            $cellclasses = ['local-coursecalendar-grid-cell'];
+            if ($isblank) {
+                $cellclasses[] = 'local-coursecalendar-blank-cell';
+            }
+            if ($highlighted) {
+                $cellclasses[] = 'local-coursecalendar-highlighted';
+            }
+            if ($verticallycentred) {
+                $cellclasses[] = 'local-coursecalendar-vcentred';
+            }
+            if ($row === 0) {
+                $cellclasses[] = 'local-coursecalendar-preview-header';
+            }
+            if ($row === $todayrow && $col === $todaycol && !$nearestonly) {
+                $cellclasses[] = 'local-coursecalendar-today-cell';
+            }
+            $out .= html_writer::start_tag($tag, ['class' => implode(' ', $cellclasses)]);
+
+            if ($cellheading !== '') {
+                $out .= html_writer::tag('div', format_text($cellheading, FORMAT_HTML), [
+                    'class' => 'local-coursecalendar-cellheading',
+                ]);
+            }
+            if ($isblank) {
+                $out .= html_writer::tag('div', format_text($content, FORMAT_HTML), [
+                    'class' => 'local-coursecalendar-blank-label',
+                ]);
+            } else if ($blocktype === 'TOPIC' && $selectedtopic) {
+                $out .= local_coursecalendar_topic_heading_html($selectedtopic);
+                if (!empty($selectedtopic->contenthtml)) {
+                    $topichtml = format_text($selectedtopic->contenthtml, FORMAT_HTML);
+                    $topichtml = preg_replace('/<a\b/', '<a target="_blank"', $topichtml);
+                    $out .= html_writer::tag('div', $topichtml, ['class' => 'local-coursecalendar-topic-preview']);
+                }
+            } else if ($row === 0) {
+                $out .= html_writer::tag('div', format_text($content, FORMAT_HTML), [
+                    'class' => 'local-coursecalendar-readonly-cell',
+                ]);
+                if ($cell && !empty($cell->headerday)) {
+                    $out .= html_writer::tag(
+                        'div',
+                        s($cell->headerday) . ($cell->headermode ? ' &middot; ' . s($cell->headermode) : ''),
+                        ['class' => 'local-coursecalendar-header-meta']
+                    );
+                }
+            } else if ($content !== '') {
+                $texthtml = format_text($content, FORMAT_HTML);
+                $texthtml = preg_replace('/<a\b/', '<a target="_blank"', $texthtml);
+                $out .= html_writer::tag('div', $texthtml, ['class' => 'local-coursecalendar-text-preview']);
+            }
+
+            $out .= html_writer::end_tag($tag);
+        }
+        $out .= html_writer::end_tag('tr');
+    }
+    $out .= html_writer::end_tag('table');
+    $out .= html_writer::end_tag('div');
+
+    if ($autoscroll && $todayrow) {
+        $out .= <<<'JS'
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var selector = ".local-coursecalendar-today-cell,.local-coursecalendar-nearest-row";
+    var target = document.querySelector(selector);
+    if (target) {
+        target.scrollIntoView({behavior: "smooth", block: "center"});
+    }
+});
+</script>
+JS;
+    }
+
+    return $out;
+}
+
 // Migration helpers.
 
 /**
@@ -1602,20 +1956,28 @@ function local_coursecalendar_date_to_cell(array $blocksmap, int $maxrow, int $t
  * @return array ['created' => int, 'skipped' => int]
  */
 function local_coursecalendar_seed_topics_from_html(string $html, string $layout, int $blueprintid, int $userid): array {
+    global $DB;
+
     $skippatterns = [
         '/^\s*problem\s+session/i',
-        '/^\s*college\s+closed/i',
+        '/college\s+closed/i',
         '/^\s*no\s+class/i',
         '/^\s*thanksgiving/i',
+        '/^\s*labou?r\s+day/i',
         '/^\s*spring\s+break/i',
         '/^\s*reading\s+week/i',
+        '/semester\s+(hasn.?t\s+started|has\s+ended)/i',
     ];
 
+    // The layout describes the lecture/lab content columns only. In the pasted
+    // table the very first column is the "Week N / date" label and the final
+    // column is homework, so content columns are 1..count($chars).
     $colmodes = [];
     $chars = str_split(strtoupper($layout));
     foreach ($chars as $i => $ch) {
         $colmodes[$i + 1] = ($ch === 'L') ? 'Lecture' : 'Lab';
     }
+    $contentcols = count($chars);
 
     $dom = new DOMDocument();
     @$dom->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
@@ -1632,14 +1994,24 @@ function local_coursecalendar_seed_topics_from_html(string $html, string $layout
         if ($cells->length === 0) {
             $cells = $row->getElementsByTagName('th');
         }
+        if ($cells->length === 0) {
+            continue;
+        }
 
-        for ($ci = 0; $ci < $cells->length; $ci++) {
+        // First column is the week/date label - context only, never imported as a topic.
+        $weeklines = preg_split('/\n+/', local_coursecalendar_cell_plaintext($dom, $cells->item(0))) ?: [];
+        $weeklines = array_values(array_filter(array_map('trim', $weeklines), static function (string $l): bool {
+            return $l !== '';
+        }));
+        $weeklabel = trim(implode(' ', array_slice($weeklines, 0, 2)));
+
+        for ($ci = 1; $ci < $cells->length; $ci++) {
             $cell = $cells->item($ci);
             $innerhtml = '';
             foreach ($cell->childNodes as $child) {
                 $innerhtml .= $dom->saveHTML($child);
             }
-            $text = trim(strip_tags($innerhtml));
+            $text = local_coursecalendar_cell_plaintext($dom, $cell);
             if ($text === '') {
                 continue;
             }
@@ -1651,15 +2023,16 @@ function local_coursecalendar_seed_topics_from_html(string $html, string $layout
                 }
             }
 
-            $colindex = $ci + 1;
-            $type = local_coursecalendar_detect_topic_type($text, $colmodes[$colindex] ?? 'Lecture', $colindex, count($chars));
+            // Content columns are 1..$contentcols; the column right after is homework.
+            $colmode = $colmodes[$ci] ?? 'Lecture';
+            $type = local_coursecalendar_detect_topic_type($text, $colmode, $ci, $contentcols);
 
-            $title = local_coursecalendar_extract_topic_title($text, $type);
+            $firstlinktext = local_coursecalendar_cell_first_link_text($cell);
+            $title = local_coursecalendar_extract_topic_title($text, $type, $weeklabel, $firstlinktext);
             if ($title === '') {
-                $title = mb_substr($text, 0, 80);
+                $title = local_coursecalendar_clip_title($weeklabel !== '' ? $weeklabel : $text);
             }
 
-            $DB = $GLOBALS['DB'];
             $DB->insert_record('local_coursecalendar_blueprint_topics', (object)[
                 'blueprintid' => $blueprintid,
                 'title' => $title,
@@ -1677,6 +2050,72 @@ function local_coursecalendar_seed_topics_from_html(string $html, string $layout
     }
 
     return ['created' => $created, 'skipped' => $skipped];
+}
+
+/**
+ * Extract readable plain text from a table cell, preserving line breaks between
+ * block-level elements so list items and paragraphs don't run together.
+ *
+ * @param DOMDocument $dom The owning document (for saveHTML()).
+ * @param DOMNode|null $cell The cell node.
+ * @return string Cleaned, newline-separated plain text.
+ */
+function local_coursecalendar_cell_plaintext(DOMDocument $dom, ?DOMNode $cell): string {
+    if ($cell === null) {
+        return '';
+    }
+    $innerhtml = '';
+    foreach ($cell->childNodes as $child) {
+        $innerhtml .= $dom->saveHTML($child);
+    }
+    // Mark block-level boundaries (open or close) with a sentinel so visually
+    // separate lines stay separate, then drop all remaining markup. Source
+    // whitespace (including wrap newlines inside a link) is collapsed first so
+    // it never gets mistaken for a real line break.
+    $sentinel = "\x01";
+    $marked = preg_replace(
+        '/<\/?\s*(p|div|li|ul|ol|br|h[1-6]|span|tr|td|table)\b[^>]*>/i',
+        $sentinel,
+        $innerhtml
+    );
+    $textonly = html_entity_decode(strip_tags((string)$marked), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $textonly = preg_replace('/[\s\x{00a0}]+/u', ' ', $textonly);
+    $clean = [];
+    foreach (explode($sentinel, $textonly) as $part) {
+        $part = trim($part);
+        if ($part !== '') {
+            $clean[] = $part;
+        }
+    }
+    return implode("\n", $clean);
+}
+
+/**
+ * Return the text of the first hyperlink inside a cell, if any.
+ *
+ * @param DOMNode|null $cell The cell node.
+ * @return string First link text, or '' when there is no link.
+ */
+function local_coursecalendar_cell_first_link_text(?DOMNode $cell): string {
+    if (!($cell instanceof DOMElement)) {
+        return '';
+    }
+    $links = $cell->getElementsByTagName('a');
+    if ($links->length === 0) {
+        return '';
+    }
+    return trim(preg_replace('/[\s\x{00a0}]+/u', ' ', $links->item(0)->textContent));
+}
+
+/**
+ * Normalise and clip a candidate title to a sensible length.
+ *
+ * @param string $title Raw title text.
+ * @return string Cleaned title.
+ */
+function local_coursecalendar_clip_title(string $title): string {
+    $title = trim(preg_replace('/[\s\x{00a0}]+/u', ' ', $title));
+    return core_text::substr($title, 0, 120);
 }
 
 /**
@@ -1704,14 +2143,19 @@ function local_coursecalendar_next_topic_sortorder(int $blueprintid): int {
  * @return string Detected topic type code.
  */
 function local_coursecalendar_detect_topic_type(string $text, string $colmode, int $colindex, int $totalcols): string {
-    $lower = core_text::strtolower($text);
     if (preg_match('/^test|^exam|^midterm|^final\s+exam/i', $text)) {
         return 'TEST';
     }
-    if (preg_match('/^lab\b/i', $text)) {
+    if (preg_match('/^\s*e-?lab\b/im', $text)) {
         return 'LAB';
     }
-    if (preg_match('/elesson|e-lesson/i', $text)) {
+    if (preg_match('/^\s*lab\b/im', $text)) {
+        return 'LAB';
+    }
+    // Only treat as an eLesson when a line actually starts with "eLesson"
+    // (the banner or "eLesson (required)" heading) - not when the word merely
+    // appears inside another title such as "SHM eLesson followup".
+    if (preg_match('/^\s*e-?lesson\b/im', $text)) {
         return 'ELESSON';
     }
     if ($colindex === $totalcols + 1 || preg_match('/homework|assignment|problem\s+set|hw\s*\d/i', $text)) {
@@ -1726,20 +2170,93 @@ function local_coursecalendar_detect_topic_type(string $text, string $colmode, i
 /**
  * Extract a clean topic title from pasted cell text.
  *
- * @param string $text Cell text content.
+ * Titles are mainly used to identify a topic when placing it in the builder.
+ * Lectures and labs are not shown with a title in the calendar itself (only
+ * their content is); we derive the title from the cell's own substance (slide
+ * name, first link, or first real line) rather than the week label.
+ *
+ * @param string $text Cleaned, newline-separated cell text.
  * @param string $type Detected topic type (as returned by {@see local_coursecalendar_detect_topic_type()}).
+ * @param string $weeklabel Week/date label for the row (used only as a last-resort fallback).
+ * @param string $firstlinktext Text of the first hyperlink in the cell, if any.
  * @return string Short title suitable for storing on the topic record.
  */
-function local_coursecalendar_extract_topic_title(string $text, string $type): string {
-    if ($type === 'TEST' || $type === 'LAB') {
-        return mb_substr($text, 0, 120);
+function local_coursecalendar_extract_topic_title(
+    string $text,
+    string $type,
+    string $weeklabel = '',
+    string $firstlinktext = ''
+): string {
+    $lines = array_values(array_filter(
+        array_map('trim', preg_split('/\n+/', trim($text)) ?: []),
+        static function (string $l): bool {
+            return $l !== '';
+        }
+    ));
+
+    $islabelline = static function (string $line): bool {
+        return (bool)preg_match(
+            '/^(pre-?\s*class\s+reading|class\s+slides?|slides?|reading(\s*\(optional\))?'
+                . '|simulations?|recorded\s+lecture|videos?|e-?lesson(\s*\(required\))?'
+                . '|e-?lab|do\s+not\s+come\s+to\s+class)/i',
+            $line
+        );
+    };
+
+    $firstcontentline = '';
+    foreach ($lines as $line) {
+        if (!$islabelline($line)) {
+            $firstcontentline = $line;
+            break;
+        }
     }
-    // Try to extract title from "Class slides:" or first line.
-    if (preg_match('/class\s+slides?\s*:?\s*(.+?)(?:\n|$)/i', $text, $m)) {
-        return trim($m[1]);
+
+    $week = trim(preg_replace('/[\s\x{00a0}]+/u', ' ', $weeklabel));
+
+    switch ($type) {
+        case 'TEST':
+            return local_coursecalendar_clip_title($lines[0] ?? $week);
+
+        case 'LAB':
+            // Prefer the "Lab N - <name>" line (an eLab banner may precede it).
+            foreach ($lines as $line) {
+                if (preg_match('/^lab\b/i', $line)) {
+                    return local_coursecalendar_clip_title($line);
+                }
+            }
+            return local_coursecalendar_clip_title($lines[0] ?? ($firstlinktext ?: $week));
+
+        case 'HOMEWORK':
+            return local_coursecalendar_clip_title(
+                $firstlinktext !== '' ? $firstlinktext : ($firstcontentline ?: ($lines[0] ?? ''))
+            );
+
+        case 'ELESSON':
+            // The lesson name is the link, not the "Do not come to class" banner.
+            return local_coursecalendar_clip_title(
+                $firstlinktext !== '' ? $firstlinktext : ($firstcontentline ?: ($lines[0] ?? 'eLesson'))
+            );
+
+        case 'LECTURE':
+        default:
+            // Prefer the "Class slides" name, then the first link, then any real line.
+            $slidename = '';
+            $afterslides = false;
+            foreach ($lines as $line) {
+                if ($afterslides) {
+                    $slidename = $line;
+                    break;
+                }
+                if (preg_match('/^class\s+slides?/i', $line)) {
+                    $afterslides = true;
+                }
+            }
+            $base = $slidename;
+            if ($base === '') {
+                $base = $firstlinktext !== '' ? $firstlinktext : ($firstcontentline ?: 'Lecture');
+            }
+            return local_coursecalendar_clip_title($base);
     }
-    $lines = preg_split('/[\r\n]+/', $text, 2);
-    return trim($lines[0]);
 }
 
 /**
@@ -1830,137 +2347,6 @@ function local_coursecalendar_bulk_update_elesson_links(string $html, int $bluep
     return ['updated' => $updated, 'notfound' => $notfound];
 }
 
-// AI-assisted semester date extraction.
-
-/**
- * Build the Gemini extraction prompt.
- *
- * The prompt is shared between the text-paste and PDF-upload code paths so that
- * Gemini produces consistent JSON regardless of input format.
- */
-function local_coursecalendar_gemini_extraction_prompt(): string {
-    return "You are an academic calendar parser. Extract all important dates from the following input "
-        . "and return them as a JSON array. Each element should be an object with these fields:\n"
-        . "- \"type\": one of SEMESTER_START, SEMESTER_END, NO_CLASS, DAY_SWAP, OTHER\n"
-        . "- \"date\": in YYYY-MM-DD format\n"
-        . "- \"label\": short description (e.g., \"Labor Day\", \"Spring Break\")\n"
-        . "- \"description\": optional longer description\n"
-        . "- \"fromday\": for DAY_SWAP only, the day being swapped FROM (e.g., \"MONDAY\")\n"
-        . "- \"today\": for DAY_SWAP only, the day being swapped TO\n\n"
-        . "Rules for type detection:\n"
-        . "- First day of classes or semester begins = SEMESTER_START\n"
-        . "- Last day of classes or semester ends = SEMESTER_END\n"
-        . "- College closed, holiday, no classes, break = NO_CLASS\n"
-        . "- Follow X schedule, classes meet as Y = DAY_SWAP\n"
-        . "- Everything else = OTHER\n\n"
-        . "Return ONLY the JSON array, no markdown formatting.";
-}
-
-/**
- * Low-level Gemini API caller.
- *
- * Accepts an array of Gemini `parts` (text/inline_data) and returns the extracted
- * JSON array as a pretty-printed string, or null on failure.
- *
- * @param string $apikey Gemini API key.
- * @param array  $parts  Array of Gemini content parts.
- * @return string|null
- */
-function local_coursecalendar_gemini_call(string $apikey, array $parts): ?string {
-    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='
-        . urlencode($apikey);
-
-    $payload = json_encode([
-        'contents' => [
-            ['parts' => $parts],
-        ],
-        'generationConfig' => [
-            'temperature' => 0.1,
-            'maxOutputTokens' => 4096,
-        ],
-    ]);
-
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $payload,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-        CURLOPT_TIMEOUT => 60,
-    ]);
-    $response = curl_exec($ch);
-    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    if ($httpcode !== 200 || !$response) {
-        return null;
-    }
-
-    $data = json_decode($response, true);
-    $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
-    if (!$text) {
-        return null;
-    }
-
-    $text = trim($text);
-    // Gemini often wraps JSON in markdown code fences; strip them if present.
-    $fence = str_repeat(chr(96), 3);
-    if (strpos($text, $fence) !== false) {
-        if (preg_match('/' . $fence . '(?:json)?\s*(.*?)\s*' . $fence . '/s', $text, $m)) {
-            $text = $m[1];
-        }
-    }
-
-    $decoded = json_decode($text, true);
-    if (!is_array($decoded)) {
-        return null;
-    }
-
-    return json_encode($decoded, JSON_PRETTY_PRINT);
-}
-
-/**
- * Call Google Gemini API to extract academic calendar dates from text.
- *
- * @param string $apikey
- * @param string $inputtext
- * @return string|null JSON string of extracted events, or null on failure.
- */
-function local_coursecalendar_gemini_extract_dates(string $apikey, string $inputtext): ?string {
-    $prompt = local_coursecalendar_gemini_extraction_prompt()
-        . "\n\nText to parse:\n" . $inputtext;
-
-    return local_coursecalendar_gemini_call($apikey, [['text' => $prompt]]);
-}
-
-/**
- * Call Google Gemini API to extract academic calendar dates from a PDF document.
- *
- * The PDF is sent inline (base64) to Gemini, so callers should keep files reasonably
- * sized (a few MB is fine; Gemini accepts up to ~20MB inline).
- *
- * @param string $apikey  Gemini API key.
- * @param string $pdfdata Raw binary contents of the PDF file.
- * @return string|null JSON string of extracted events, or null on failure.
- */
-function local_coursecalendar_gemini_extract_dates_from_pdf(string $apikey, string $pdfdata): ?string {
-    if ($pdfdata === '') {
-        return null;
-    }
-
-    $parts = [
-        [
-            'inline_data' => [
-                'mime_type' => 'application/pdf',
-                'data'      => base64_encode($pdfdata),
-            ],
-        ],
-        ['text' => local_coursecalendar_gemini_extraction_prompt()],
-    ];
-
-    return local_coursecalendar_gemini_call($apikey, $parts);
-}
-
 /**
  * Delete all topics for a blueprint (with optional force flag to bypass calendar reference check).
  *
@@ -2013,8 +2399,8 @@ function local_coursecalendar_get_tour_id_by_name(string $name): ?int {
 function local_coursecalendar_shipped_tours(): array {
     return [
         'teacher_setup_tour.json'   => 4,
-        'teacher_builder_tour.json' => 2,
-        'teacher_rules_tour.json'   => 2,
+        'teacher_builder_tour.json' => 3,
+        'teacher_rules_tour.json'   => 3,
     ];
 }
 

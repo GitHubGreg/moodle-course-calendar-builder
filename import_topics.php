@@ -143,30 +143,31 @@ echo html_writer::empty_tag(
 );
 echo html_writer::end_tag('form');
 
-echo html_writer::tag(
-    'h4',
-    get_string('importelessonlinkslabel', 'local_coursecalendar')
-    . ' ' . $OUTPUT->help_icon('importelessonlinkslabel', 'local_coursecalendar'),
-    ['class' => 'mt-4']
-);
-echo html_writer::start_tag('form', ['method' => 'post', 'class' => 'local-coursecalendar-card']);
-echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $courseid]);
-echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'blueprintid', 'value' => $blueprintid]);
-echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'updateelessonlinks']);
-echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-
-echo html_writer::tag('textarea', '', [
-    'name' => 'linkshtml',
-    'class' => 'form-control mb-2',
-    'rows' => 6,
-    'required' => 'required',
-]);
-
-echo html_writer::empty_tag(
-    'input',
-    ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('importelessonlinkssubmit', 'local_coursecalendar')]
-);
-echo html_writer::end_tag('form');
+// Hidden for now - "Paste HTML with eLesson links" section. May re-enable in the future.
+// echo html_writer::tag(
+//     'h4',
+//     get_string('importelessonlinkslabel', 'local_coursecalendar')
+//     . ' ' . $OUTPUT->help_icon('importelessonlinkslabel', 'local_coursecalendar'),
+//     ['class' => 'mt-4']
+// );
+// echo html_writer::start_tag('form', ['method' => 'post', 'class' => 'local-coursecalendar-card']);
+// echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $courseid]);
+// echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'blueprintid', 'value' => $blueprintid]);
+// echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'updateelessonlinks']);
+// echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+//
+// echo html_writer::tag('textarea', '', [
+//     'name' => 'linkshtml',
+//     'class' => 'form-control mb-2',
+//     'rows' => 6,
+//     'required' => 'required',
+// ]);
+//
+// echo html_writer::empty_tag(
+//     'input',
+//     ['type' => 'submit', 'class' => 'btn btn-primary', 'value' => get_string('importelessonlinkssubmit', 'local_coursecalendar')]
+// );
+// echo html_writer::end_tag('form');
 
 echo html_writer::tag(
     'h4',
@@ -174,16 +175,25 @@ echo html_writer::tag(
     . ' ' . $OUTPUT->help_icon('importdangerzone', 'local_coursecalendar'),
     ['class' => 'mt-4 text-danger']
 );
-echo html_writer::start_tag('form', ['method' => 'post', 'class' => 'local-coursecalendar-card',
-    'onsubmit' => 'return confirm(' . json_encode(get_string('deletealltopicsconfirm', 'local_coursecalendar')) . ')']);
+$deletealltopicslabel = get_string('deletealltopicsbtn', 'local_coursecalendar');
+echo html_writer::start_tag('form', [
+    'method' => 'post',
+    'class' => 'local-coursecalendar-card',
+    'data-cc-confirm' => get_string('deletealltopicsconfirm', 'local_coursecalendar'),
+    'data-cc-confirm-title' => get_string('confirm', 'core'),
+    'data-cc-confirm-action' => $deletealltopicslabel,
+    'data-cc-confirm-style' => 'delete',
+]);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $courseid]);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'blueprintid', 'value' => $blueprintid]);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'deletealltopics']);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
 echo html_writer::empty_tag(
     'input',
-    ['type' => 'submit', 'class' => 'btn btn-danger', 'value' => get_string('deletealltopicsbtn', 'local_coursecalendar')]
+    ['type' => 'submit', 'class' => 'btn btn-danger', 'value' => $deletealltopicslabel]
 );
 echo html_writer::end_tag('form');
+
+$PAGE->requires->js_call_amd('local_coursecalendar/confirmaction', 'init', []);
 
 echo $OUTPUT->footer();

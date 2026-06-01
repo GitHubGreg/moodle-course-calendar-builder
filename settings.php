@@ -23,17 +23,3 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
-
-if ($hassiteconfig) {
-    $settings = new admin_settingpage('local_coursecalendar', get_string('pluginname', 'local_coursecalendar'));
-
-    $settings->add(new admin_setting_configtext(
-        'local_coursecalendar/gemini_api_key',
-        get_string('settinggeminikey', 'local_coursecalendar'),
-        get_string('settinggeminikeyhelp', 'local_coursecalendar'),
-        '',
-        PARAM_TEXT
-    ));
-
-    $ADMIN->add('localplugins', $settings);
-}

@@ -7,7 +7,7 @@
   "endtourlabel": "",
   "displaystepnumbers": true,
   "configdata": "{\"placement\":\"bottom\",\"orphan\":\"0\",\"backdrop\":\"1\",\"reflex\":\"0\",\"filtervalues\":{\"accessdate\":{\"filter_accessdate\":\"tool_usertours_accountcreation\",\"filter_accessdate_range\":0,\"filter_accessdate_enabled\":\"0\"},\"category\":[],\"course\":[],\"courseformat\":[],\"role\":[\"-1\"],\"theme\":[],\"cssselector\":[]},\"majorupdatetime\":1745500000}",
-  "version": "2",
+  "version": "3",
   "steps": [
     {
       "title": "The semester builder",
@@ -20,7 +20,7 @@
     },
     {
       "title": "Quick links",
-      "content": "<p>Jump to related tools from here: <em>Manage Content</em> for blueprint topics, <em>Manage Rules</em> for semester dates and holidays, <em>Open Semester Preview</em> for the student view, <em>Copy Iframe Code</em> for embedding, and <em>Coverage Check</em> to compare what is placed vs missing.</p>",
+      "content": "<p>Jump to related tools from here: <em>Manage Content</em> for blueprint topics, <em>Manage Dates</em> for semester dates and holidays, <em>Open Semester Preview</em> for the student view, and <em>Coverage Check</em> to compare what is placed vs missing.</p>",
       "contentformat": "1",
       "targettype": "0",
       "targetvalue": "#local-coursecalendar-builder-actions",
@@ -74,12 +74,12 @@
     },
     {
       "title": "You're ready to build",
-      "content": "<p>Start by adding semester dates from <em>Manage Rules</em>, or use the auto-fill helpers once your blueprint topics are ready. You can re-run this tour from the <strong>Show walkthrough</strong> button at the top any time.</p>",
+      "content": "<p>Start by adding semester dates from <em>Manage Rules</em>, or use the auto-fill helpers once your blueprint topics are ready. Any time you want a refresher, click this <strong>Show walkthrough</strong> button to run the tour again.</p>",
       "contentformat": "1",
-      "targettype": "2",
-      "targetvalue": "",
+      "targettype": "0",
+      "targetvalue": "#local-coursecalendar-showtour",
       "sortorder": "7",
-      "configdata": "{\"placement\":\"bottom\",\"orphan\":\"1\",\"backdrop\":\"1\"}"
+      "configdata": "{\"placement\":\"bottom\"}"
     }
   ]
 }

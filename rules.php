@@ -188,12 +188,6 @@ echo html_writer::empty_tag(
 );
 echo html_writer::end_tag('form');
 
-$aiimporturl = new moodle_url('/local/coursecalendar/ai_import.php', ['id' => $courseid, 'calendarid' => $calendarid]);
-echo html_writer::link($aiimporturl, get_string('aiimportlink', 'local_coursecalendar'), [
-    'class' => 'btn btn-sm btn-outline-primary mb-3',
-    'id' => 'local-coursecalendar-aiimport-link',
-]);
-
 echo html_writer::tag(
     'h4',
     get_string('section_rulesexisting', 'local_coursecalendar')
@@ -419,7 +413,14 @@ if (empty($rules)) {
 
         echo html_writer::start_div('local-coursecalendar-inline-controls');
         foreach (['togglerule' => 'togglerulesubmit', 'deleterule' => 'deleterulesubmit'] as $ruleaction => $labelkey) {
-            echo html_writer::start_tag('form', ['method' => 'post', 'class' => 'local-coursecalendar-inline-form']);
+            $ruleformattrs = ['method' => 'post', 'class' => 'local-coursecalendar-inline-form'];
+            if ($ruleaction === 'deleterule') {
+                $ruleformattrs['data-cc-confirm'] = get_string('deleteruleconfirm', 'local_coursecalendar');
+                $ruleformattrs['data-cc-confirm-title'] = get_string('confirm', 'core');
+                $ruleformattrs['data-cc-confirm-action'] = get_string('deleterulesubmit', 'local_coursecalendar');
+                $ruleformattrs['data-cc-confirm-style'] = 'delete';
+            }
+            echo html_writer::start_tag('form', $ruleformattrs);
             echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $courseid]);
             echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'calendarid', 'value' => $calendarid]);
             echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => $ruleaction]);
@@ -442,6 +443,8 @@ if (empty($rules)) {
     echo html_writer::end_tag('ul');
 }
 echo $createrulehtml;
+
+$PAGE->requires->js_call_amd('local_coursecalendar/confirmaction', 'init', []);
 
 $tourid = local_coursecalendar_get_tour_id_by_name('local_coursecalendar_rules');
 $PAGE->requires->js_call_amd('local_coursecalendar/showtour', 'init', [

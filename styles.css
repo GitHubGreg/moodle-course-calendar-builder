@@ -13,14 +13,6 @@
     background: #fff;
 }
 
-/* When the card directly follows the AI import tabs, remove the top margin/radius
-   so the panel visually connects to the active tab. */
-.local-coursecalendar-aiimport-tabs {
-    margin-top: 0;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-}
-
 .local-coursecalendar-inline-form {
     margin: 0.5rem 0 1rem;
     display: inline-block;
@@ -47,6 +39,24 @@
     font-weight: 600;
 }
 
+.local-coursecalendar-delete-column-form {
+    margin: 0 0 0.25rem;
+    text-align: right;
+}
+
+.local-coursecalendar-delete-column-btn {
+    padding: 0 0.25rem;
+    line-height: 1;
+}
+
+.local-coursecalendar-weekrow-actions {
+    margin-top: 1rem;
+}
+
+.local-coursecalendar-weekrow-reminder {
+    margin-bottom: 1rem;
+}
+
 .local-coursecalendar-topic-meta {
     margin-bottom: 0.5rem;
     font-size: 0.875rem;
@@ -67,6 +77,28 @@
 .local-coursecalendar-vcentred {
     /* stylelint-disable-next-line declaration-no-important */
     vertical-align: middle !important;
+}
+
+.local-coursecalendar-blank-cell {
+    /* stylelint-disable-next-line declaration-no-important */
+    vertical-align: middle !important;
+    text-align: center;
+    color: #98a2b3;
+    background-color: #f1f3f5;
+    background-image: repeating-linear-gradient(
+        135deg,
+        rgba(152, 162, 179, 0.12),
+        rgba(152, 162, 179, 0.12) 6px,
+        rgba(152, 162, 179, 0) 6px,
+        rgba(152, 162, 179, 0) 12px
+    );
+}
+
+.local-coursecalendar-blank-label {
+    font-size: 0.8rem;
+    font-style: italic;
+    font-weight: 500;
+    color: #98a2b3;
 }
 
 .local-coursecalendar-cellheading {
@@ -163,6 +195,24 @@
 
 .local-coursecalendar-page-actions {
     margin-bottom: 1rem;
+}
+
+.local-coursecalendar-faint-actions {
+    margin-top: 2rem;
+    text-align: right;
+}
+
+.local-coursecalendar-faint-link,
+.local-coursecalendar-faint-link:visited {
+    color: #adb5bd;
+    font-size: 0.75rem;
+    text-decoration: none;
+}
+
+.local-coursecalendar-faint-link:hover,
+.local-coursecalendar-faint-link:focus {
+    color: #6c757d;
+    text-decoration: underline;
 }
 
 .local-coursecalendar-preview-header {

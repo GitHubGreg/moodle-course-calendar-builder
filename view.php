@@ -43,6 +43,7 @@ $maxrow = 0;
 foreach (array_keys($blocksmap) as $rownum) {
     $maxrow = max($maxrow, (int)$rownum);
 }
+$columns = local_coursecalendar_get_grid_columns($blocksmap);
 
 $pageurl = new moodle_url('/local/coursecalendar/view.php', ['id' => $courseid, 'calendarid' => $calendarid]);
 $PAGE->set_url($pageurl);
@@ -109,7 +110,7 @@ for ($row = 0; $row <= $maxrow; $row++) {
         $rowattrs['class'] = implode(' ', $rowclasses);
     }
     echo html_writer::start_tag('tr', $rowattrs);
-    for ($col = 0; $col <= 4; $col++) {
+    foreach ($columns as $col) {
         $cell = $blocksmap[$row][$col] ?? null;
         $content = $cell ? (string)$cell->contenthtml : '';
         $blocktype = $cell ? (string)$cell->blocktype : '';
@@ -140,14 +141,7 @@ for ($row = 0; $row <= $maxrow; $row++) {
         }
 
         if ($blocktype === 'TOPIC' && $selectedtopic) {
-            $typebadge = html_writer::tag('span', s($selectedtopic->type), [
-                'class' => 'local-coursecalendar-type-badge local-coursecalendar-type-' . strtolower($selectedtopic->type),
-            ]);
-            echo html_writer::tag(
-                'div',
-                $typebadge . ' ' . format_string($selectedtopic->title),
-                ['class' => 'local-coursecalendar-topic-display']
-            );
+            echo local_coursecalendar_topic_heading_html($selectedtopic);
             if (!empty($selectedtopic->contenthtml)) {
                 $topichtml = format_text($selectedtopic->contenthtml, FORMAT_HTML);
                 $topichtml = preg_replace('/<a\b/', '<a target="_blank"', $topichtml);
