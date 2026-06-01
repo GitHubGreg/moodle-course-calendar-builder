@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_coursecalendar';
-$plugin->version   = 2026060101;
+$plugin->version   = 2026060102;
 $plugin->requires  = 2023042400;
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.2.1';
+$plugin->release   = '0.2.2';
