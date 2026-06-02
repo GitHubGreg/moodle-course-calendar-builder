@@ -9,7 +9,7 @@ A Moodle local plugin that lets teachers define reusable course content once, bu
 | **Plugin type** | Local (`local_coursecalendar`) |
 | **Requires** | Moodle 4.2+ (`2023042400`) |
 | **Tested on** | Moodle 5.0 (`MOODLE_501_STABLE`) |
-| **Maturity** | Alpha |
+| **Maturity** | Beta |
 | **License** | [GPL v3 or later](https://www.gnu.org/licenses/gpl-3.0.html) |
 
 ---
@@ -139,7 +139,7 @@ Topics are the individual content items within a blueprint. Each topic has a typ
 |---|---|---|---|
 | `LECTURE` | Blue | Columns 1-3 (Lecture mode) | Standard lecture topics |
 | `LAB` | Green | Columns 1-3 (Lab mode) | Laboratory sessions, placed after prerequisite lectures |
-| `ELESSON` | Purple | Columns 1-3 (Lecture mode) | Online lessons with "Do not come to class" notice |
+| `ELESSON` | Purple | Columns 1-3 (Lecture mode) | Online lessons students complete instead of attending class |
 | `TEST` | Red | Columns 1-3 (Lecture mode) | Exams/tests, displayed with highlighted yellow styling |
 | `HOMEWORK` | Orange | Column 4 | Assignments and problem sets |
 
@@ -259,9 +259,8 @@ Automation buttons on the builder page handle bulk topic placement.
 1. Places LECTURE, ELESSON, and TEST topics into Lecture-mode columns (1-3) in blueprint sortorder, skipping occupied cells.
 2. Places LAB topics into Lab-mode columns, positioned after their prerequisite lecture's row.
 3. Places HOMEWORK topics sequentially into column 4.
-4. eLessons receive a "Do not come to class. Do eLesson before next lecture." heading notice.
-5. TEST blocks get highlighted (yellow) and vertically-centred styling.
-6. Existing content is never overwritten.
+4. TEST blocks get highlighted (yellow) and vertically-centred styling.
+5. Existing content is never overwritten.
 
 **Fill Problem Sessions** (green outline button):
 - Scans all Lab-mode columns and inserts "Problem Session" TEXT blocks into empty cells with vertically-centred styling.
