@@ -1,6 +1,6 @@
 # Course Calendar (`local_coursecalendar`)
 
-[![Moodle Plugin CI](https://github.com/GitHubGreg/moodle-course-calendar-builder/actions/workflows/moodle-ci.yml/badge.svg?branch=main)](https://github.com/GitHubGreg/moodle-course-calendar-builder/actions/workflows/moodle-ci.yml)
+[![Moodle Plugin CI](https://github.com/GitHubGreg/moodle-local_coursecalendar/actions/workflows/moodle-ci.yml/badge.svg?branch=main)](https://github.com/GitHubGreg/moodle-local_coursecalendar/actions/workflows/moodle-ci.yml)
 
 A Moodle local plugin that lets teachers define reusable course content once, build semester calendars from that content, and publish a student-facing calendar view inside Moodle.
 
@@ -53,12 +53,12 @@ The repository root is the plugin directory itself, so the contents clone or ext
 From the root of your Moodle installation:
 
 ```bash
-git clone https://github.com/GitHubGreg/moodle-course-calendar-builder.git local/coursecalendar
+git clone https://github.com/GitHubGreg/moodle-local_coursecalendar.git local/coursecalendar
 ```
 
 ### Option B: Download a release zip
 
-1. Download the latest release zip from the [Releases page](https://github.com/GitHubGreg/moodle-course-calendar-builder/releases).
+1. Download the latest release zip from the [Releases page](https://github.com/GitHubGreg/moodle-local_coursecalendar/releases).
 2. Extract it so the plugin files (`version.php`, `db/`, `lang/`, `amd/`, etc.) live directly at `<moodle>/local/coursecalendar/`.
 
 ### Finish the install
@@ -435,7 +435,7 @@ All tables are prefixed with `local_coursecalendar_`.
 
 ## Reporting Issues
 
-Please open an issue on [GitHub Issues](https://github.com/GitHubGreg/moodle-course-calendar-builder/issues) with:
+Please open an issue on [GitHub Issues](https://github.com/GitHubGreg/moodle-local_coursecalendar/issues) with:
 
 - Your Moodle version.
 - The plugin version (see `version.php`).
