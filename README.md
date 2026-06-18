@@ -19,8 +19,7 @@ A Moodle local plugin that lets teachers define reusable course content once, bu
 1. [Installation](#installation)
 2. [Getting Started](#getting-started)
 3. [Capabilities and Roles](#capabilities-and-roles)
-4. [Plugin Settings](#plugin-settings)
-5. [Feature Guide](#feature-guide)
+4. [Feature Guide](#feature-guide)
    - [Blueprints](#blueprints)
    - [Topics](#topics)
    - [Course Linking](#course-linking)
@@ -34,13 +33,12 @@ A Moodle local plugin that lets teachers define reusable course content once, bu
    - [Intro Texts](#intro-texts)
    - [Embedded View](#embedded-view)
    - [Migration Helpers](#migration-helpers)
-   - [AI Calendar Import](#ai-calendar-import)
-6. [Page Reference](#page-reference)
-7. [Database Tables](#database-tables)
-8. [Upgrading](#upgrading)
-9. [Troubleshooting](#troubleshooting)
-10. [Reporting Issues](#reporting-issues)
-11. [License](#license)
+5. [Page Reference](#page-reference)
+6. [Database Tables](#database-tables)
+7. [Upgrading](#upgrading)
+8. [Troubleshooting](#troubleshooting)
+9. [Reporting Issues](#reporting-issues)
+10. [License](#license)
 
 ---
 
@@ -94,21 +92,11 @@ The typical workflow for a new teacher is:
 
 | Capability | Default roles | Purpose |
 |---|---|---|
-| `local/coursecalendar:managesettings` | Manager | Access plugin admin settings (e.g. API keys) |
+| `local/coursecalendar:managesettings` | Manager | Access plugin admin settings |
 | `local/coursecalendar:managecalendar` | Editing teacher, Manager | Full access to builder, topics, rules, automation, and course info |
 | `local/coursecalendar:viewcalendar` | Guest, Student, Teacher, Editing teacher, Manager | Read-only access to the student calendar view |
 
 Teachers can only see and edit blueprints they own. All builder pages enforce `require_login()` and `require_capability()` in the course context.
-
----
-
-## Plugin Settings
-
-Navigate to **Site administration > Plugins > Local plugins > Course Calendar**.
-
-| Setting | Description |
-|---|---|
-| **Gemini API Key** | Google Gemini API key for the AI-assisted academic calendar import feature. Leave blank to disable AI import. |
 
 ---
 
@@ -335,32 +323,9 @@ Tools for importing existing calendar content into the plugin.
    - Filters out non-topic content (Problem Session, College Closed, holidays).
    - Creates blueprint topics in order with full HTML content preserved.
 
-**Bulk eLesson link updater:**
-1. Paste HTML containing eLesson links (e.g. from a course page).
-2. Click "Update eLesson links" -- the matcher:
-   - Compares link text to the first bullet point in each ELESSON topic's content.
-   - Updates the `href` in matched topics.
-   - Reports how many were updated and how many were not matched.
-
 **Delete all topics:**
 - Red "Delete All Topics" button with confirmation dialog.
 - Permanently removes all topics from the current blueprint.
-
-### AI Calendar Import
-
-AI-assisted extraction of academic calendar dates into timeline rules.
-
-**Where:** `ai_import.php` (accessed via "AI Calendar Import" on the rules page).
-
-**Prerequisites:** A Gemini API key must be configured in plugin settings.
-
-**Workflow:**
-1. Paste academic calendar text (from a PDF, email, or webpage) into the textarea.
-2. Click "Extract dates with AI" -- sends the text to Google Gemini, which returns a structured JSON array of dated events.
-3. Review and edit the extracted JSON if needed. Each event has: type, date, label, description, and optional from-day/to-day.
-4. Click "Apply as rules" -- creates timeline exception rules from the JSON, then redirects to the rules page.
-
-**Supported event types:** SEMESTER_START, SEMESTER_END, NO_CLASS, DAY_SWAP, OTHER.
 
 ---
 
@@ -372,8 +337,7 @@ AI-assisted extraction of academic calendar dates into timeline rules.
 | `calendar.php` | `?id={courseid}&calendarid={id}` | `managecalendar` | Grid builder |
 | `rules.php` | `?id={courseid}&calendarid={id}` | `managecalendar` | Academic timeline rules CRUD |
 | `coverage.php` | `?id={courseid}&calendarid={id}` | `managecalendar` | Topic coverage report |
-| `import_topics.php` | `?id={courseid}&blueprintid={id}` | `managecalendar` | HTML import and bulk operations |
-| `ai_import.php` | `?id={courseid}&calendarid={id}` | `managecalendar` | AI-assisted date extraction |
+| `import_topics.php` | `?id={courseid}&blueprintid={id}` | `managecalendar` | HTML topic import |
 | `view.php` | `?id={courseid}&calendarid={id}` | `viewcalendar` | Student calendar view |
 | `embed.php` | `?id={courseid}&calendarid={id}` | `viewcalendar` | Iframe-friendly calendar |
 
@@ -422,9 +386,6 @@ All tables are prefixed with `local_coursecalendar_`.
 **Week labels not appearing after Apply Rules:**
 - Ensure both a SEMESTER_START and SEMESTER_END rule exist and are active.
 - The end date must be after the start date.
-
-**AI Import button is disabled:**
-- A Gemini API key must be configured at Site administration > Plugins > Local plugins > Course Calendar.
 
 **Styles look broken:**
 - Purge all caches. The plugin stylesheet may be cached by Moodle's theme layer.
